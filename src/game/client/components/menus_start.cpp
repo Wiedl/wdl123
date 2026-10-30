@@ -2,6 +2,8 @@
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include "menus_start.h"
 
+#include <base/color.h>
+
 #include <engine/client/updater.h>
 #include <engine/font_icons.h>
 #include <engine/graphics.h>
@@ -146,6 +148,13 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 	{
 		NewPage = g_Config.m_UiPage >= CMenus::PAGE_INTERNET && g_Config.m_UiPage <= CMenus::PAGE_FAVORITE_COMMUNITY_5 ? g_Config.m_UiPage : CMenus::PAGE_INTERNET;
 	}
+
+	// Render the player tee next to Play. The existing cute-eye renderer makes
+	// the tee follow the mouse cursor, just like the TClient skin previews.
+	const int MenuTeeColor = ColorHSLA(232.0f / 255.0f, 190.0f / 255.0f, 116.0f / 255.0f).Pack(false);
+	GameClient()->m_Menus.RenderDevSkin(
+		vec2(Button.x + Button.w + 48.0f, Button.y + Button.h * 0.5f),
+		64.0f, "cutecitty", "default", true, MenuTeeColor, MenuTeeColor, 0, false, true);
 
 	// render version
 	CUIRect CurVersion, ConsoleButton;
