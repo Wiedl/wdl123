@@ -48,6 +48,23 @@ void CMapLayers::OnMapLoad()
 	m_MapRenderer.Load(m_Type, m_pLayers, m_pImages, &m_EnvEvaluator, ProgressBarCallback);
 }
 
+void CMapLayers::OnRenderBee(vec2 Center, float Zoom)
+{
+	if(m_OnlineOnly && Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
+		return;
+
+	m_Params.m_EntityOverlayVal = m_Type == RENDERTYPE_FULL_DESIGN ? 0 : g_Config.m_ClOverlayEntities;
+	m_Params.m_Center = Center;
+	m_Params.m_Zoom = Zoom;
+	m_Params.m_RenderText = g_Config.m_ClTextEntities;
+	m_Params.m_DebugRenderGroupClips = g_Config.m_DbgRenderGroupClips;
+	m_Params.m_DebugRenderQuadClips = g_Config.m_DbgRenderQuadClips;
+	m_Params.m_DebugRenderClusterClips = g_Config.m_DbgRenderClusterClips;
+	m_Params.m_DebugRenderTileClips = g_Config.m_DbgRenderTileClips;
+
+	m_MapRenderer.Render(m_Params);
+}
+
 void CMapLayers::OnRender()
 {
 	if(m_OnlineOnly && Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
