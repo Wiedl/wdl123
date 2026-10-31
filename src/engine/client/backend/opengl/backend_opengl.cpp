@@ -731,7 +731,15 @@ void CCommandProcessorFragment_OpenGL::DestroyTexture(int Slot)
 
 void CCommandProcessorFragment_OpenGL::Cmd_Texture_Destroy(const CCommandBuffer::SCommand_Texture_Destroy *pCommand)
 {
-	DestroyTexture(pCommand->m_Slot);
+	const int Slot = pCommand->m_Slot;
+#if !defined(BACKEND_AS_OPENGL_ES) || defined(CONF_BACKEND_OPENGL_ES3)
+	if(Slot >= 0 && Slot < (int)m_vRenderTargetFramebuffers.size() && m_vRenderTargetFramebuffers[Slot] != 0)
+	{
+		glDeleteFramebuffers(1, &m_vRenderTargetFramebuffers[Slot]);
+		m_vRenderTargetFramebuffers[Slot] = 0;
+	}
+#endif
+	DestroyTexture(Slot);
 }
 
 void CCommandProcessorFragment_OpenGL::TextureCreate(int Slot, int Width, int Height, int GLFormat, int GLStoreFormat, int Flags, uint8_t *pTexData)
@@ -1080,6 +1088,7 @@ void CCommandProcessorFragment_OpenGL::Cmd_Screenshot(const CCommandBuffer::SCom
 CCommandProcessorFragment_OpenGL::CCommandProcessorFragment_OpenGL()
 {
 	m_vTextures.resize(CCommandBuffer::MAX_TEXTURES);
+	m_vRenderTargetFramebuffers.resize(CCommandBuffer::MAX_TEXTURES, 0);
 	m_HasShaders = false;
 }
 
@@ -1125,6 +1134,15 @@ ERunCommandReturnTypes CCommandProcessorFragment_OpenGL::RunCommand(const CComma
 		break;
 	case CCommandBuffer::CMD_UPDATE_VIEWPORT:
 		Cmd_Update_Viewport(static_cast<const CCommandBuffer::SCommand_Update_Viewport *>(pBaseCommand));
+		break;
+	case CCommandBuffer::CMD_RENDER_TARGET_CREATE:
+		Cmd_RenderTarget_Create(static_cast<const CCommandBuffer::SCommand_RenderTarget_Create *>(pBaseCommand));
+		break;
+	case CCommandBuffer::CMD_RENDER_TARGET_BEGIN:
+		Cmd_RenderTarget_Begin(static_cast<const CCommandBuffer::SCommand_RenderTarget_Begin *>(pBaseCommand));
+		break;
+	case CCommandBuffer::CMD_RENDER_TARGET_END:
+		Cmd_RenderTarget_End(static_cast<const CCommandBuffer::SCommand_RenderTarget_End *>(pBaseCommand));
 		break;
 
 	case CCommandBuffer::CMD_CREATE_BUFFER_OBJECT: Cmd_CreateBufferObject(static_cast<const CCommandBuffer::SCommand_CreateBufferObject *>(pBaseCommand)); break;
