@@ -50,6 +50,17 @@ protected:
 		float m_ResizeHeight;
 	};
 	std::vector<CTexture> m_vTextures;
+
+	// Framebuffer objects are indexed by the engine texture slot they attach to.
+	std::vector<TWGLuint> m_vRenderTargetFramebuffers;
+	bool m_RenderTargetActive = false;
+	int m_SavedFramebuffer = 0;
+	int m_aSavedViewport[4]{};
+	int m_aSavedScissor[4]{};
+	bool m_SavedScissorEnabled = false;
+	int m_SavedViewportX = 0;
+	int m_SavedViewportY = 0;
+	bool m_SavedLastClipEnable = false;
 	std::atomic<uint64_t> *m_pTextureMemoryUsage;
 
 	// Position of the viewport within the drawable area, with the bottom left origin
@@ -107,6 +118,10 @@ protected:
 	virtual void Cmd_Screenshot(const CCommandBuffer::SCommand_TrySwapAndScreenshot *pCommand);
 
 	virtual void Cmd_Update_Viewport(const CCommandBuffer::SCommand_Update_Viewport *pCommand);
+
+	virtual void Cmd_RenderTarget_Create(const CCommandBuffer::SCommand_RenderTarget_Create *pCommand);
+	virtual void Cmd_RenderTarget_Begin(const CCommandBuffer::SCommand_RenderTarget_Begin *pCommand);
+	virtual void Cmd_RenderTarget_End(const CCommandBuffer::SCommand_RenderTarget_End *pCommand);
 
 	virtual void Cmd_CreateBufferObject(const CCommandBuffer::SCommand_CreateBufferObject *pCommand) { dbg_assert_failed("Call of unsupported Cmd_CreateBufferObject"); }
 	virtual void Cmd_RecreateBufferObject(const CCommandBuffer::SCommand_RecreateBufferObject *pCommand) { dbg_assert_failed("Call of unsupported Cmd_RecreateBufferObject"); }
