@@ -83,6 +83,7 @@
 #include <game/teamscore.h>
 #include <game/version.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <limits>
@@ -104,8 +105,16 @@ vec2 CBee::MousePosition() const
 
 bool CBee::OnInput(const IInput::CEvent &Event)
 {
+	if(Event.m_Key == KEY_MOUSE_1 && (Event.m_Flags & IInput::FLAG_RELEASE))
+	{
+		const bool WasInteracting = m_Dragging || m_Resizing;
+		m_Dragging = false;
+		m_Resizing = false;
+		return WasInteracting;
+	}
+
 	if(!g_Config.m_ClBeeEnabled || GameClient()->m_Menus.IsActive() ||
-		Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
+		(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK))
 		return false;
 
 	if(Event.m_Key == KEY_MOUSE_WHEEL_UP || Event.m_Key == KEY_MOUSE_WHEEL_DOWN)
@@ -155,14 +164,6 @@ bool CBee::OnInput(const IInput::CEvent &Event)
 		m_Resizing = Mouse.x >= X + W - 20.0f && Mouse.y >= Y + H - 20.0f;
 		m_Dragging = !m_Resizing && Mouse.y <= Y + 26.0f;
 		return m_Dragging || m_Resizing;
-	}
-
-	if(Event.m_Flags & IInput::FLAG_RELEASE)
-	{
-		const bool WasInteracting = m_Dragging || m_Resizing;
-		m_Dragging = false;
-		m_Resizing = false;
-		return WasInteracting;
 	}
 
 	return false;
@@ -266,10 +267,11 @@ void CBee::OnRender()
 	}
 
 	// Clip the normal framebuffer to the movable Bee panel. The game camera itself is never modified.
-	const int ClipX = (int)std::round(BeeRect.x * Graphics()->ScreenWidth() / pScreen->w);
-	const int ClipY = (int)std::round(BeeRect.y * Graphics()->ScreenHeight() / pScreen->h);
-	const int ClipW = (int)std::round(BeeRect.w * Graphics()->ScreenWidth() / pScreen->w);
-	const int ClipH = (int)std::round(BeeRect.h * Graphics()->ScreenHeight() / pScreen->h);
+	constexpr float PanelInset = 3.0f;
+	const int ClipX = (int)std::round((BeeRect.x + PanelInset) * Graphics()->ScreenWidth() / pScreen->w);
+	const int ClipY = (int)std::round((BeeRect.y + PanelInset) * Graphics()->ScreenHeight() / pScreen->h);
+	const int ClipW = (int)std::round((BeeRect.w - 2.0f * PanelInset) * Graphics()->ScreenWidth() / pScreen->w);
+	const int ClipH = (int)std::round((BeeRect.h - 2.0f * PanelInset) * Graphics()->ScreenHeight() / pScreen->h);
 	auto EnableBeeClip = [&]() { Graphics()->ClipEnable(ClipX, ClipY, ClipW, ClipH); };
 
 	Graphics()->MapScreenToInterface(Center.x, Center.y, ViewZoom);
