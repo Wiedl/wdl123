@@ -4,6 +4,7 @@
 #include "gameclient.h"
 
 #include "components/background.h"
+#include "components/bee.h"
 #include "components/binds.h"
 #include "components/broadcast.h"
 #include "components/camera.h"
@@ -185,7 +186,8 @@ void CGameClient::OnConsoleInit()
 					      &m_Scripting, // TClient
 					      &m_KeyBinder,
 					      &m_GameConsole,
-					      &m_MenuBackground});
+					      &m_MenuBackground,
+					      &m_Bee});
 
 	// build the input stack
 	m_vpInput.insert(m_vpInput.end(), {&m_KeyBinder, // this will take over all input when we want to bind a key
