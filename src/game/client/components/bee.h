@@ -2,6 +2,8 @@
 #ifndef GAME_CLIENT_COMPONENTS_BEE_H
 #define GAME_CLIENT_COMPONENTS_BEE_H
 
+#include <engine/graphics.h>
+
 #include <game/client/component.h>
 #include <game/client/components/camera.h>
 
