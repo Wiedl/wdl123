@@ -283,7 +283,7 @@ void CBee::OnRender()
 	EnableBeeClip();
 	GameClient()->m_Items.OnRender();
 	EnableBeeClip();
-	GameClient()->m_Players.OnRender();
+	GameClient()->m_Players.RenderBee();
 	EnableBeeClip();
 	GameClient()->m_MapLayersForeground.OnRenderBee(Center, ViewZoom);
 	EnableBeeClip();
