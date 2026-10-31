@@ -746,6 +746,65 @@ void CGraphics_Threaded::Clear(float r, float g, float b, bool ForceClearNow)
 	AddCmd(Cmd);
 }
 
+IGraphics::CTextureHandle CGraphics_Threaded::CreateRenderTarget(int Width, int Height)
+{
+	// Keep allocations bounded. Bee viewports are deliberately small.
+	if(Width < 16 || Height < 16 || Width > 4096 || Height > 4096)
+		return CTextureHandle();
+
+	CImageInfo Image;
+	Image.m_Width = Width;
+	Image.m_Height = Height;
+	Image.m_Format = CImageInfo::FORMAT_RGBA;
+	Image.AllocateFillZero();
+
+	CTextureHandle Target = LoadTextureRawMove(Image, 0, "off-screen render target");
+	if(!Target.IsValid())
+		return CTextureHandle();
+
+	bool Success = false;
+	CCommandBuffer::SCommand_RenderTarget_Create Cmd;
+	Cmd.m_Slot = Target.Id();
+	Cmd.m_Width = Width;
+	Cmd.m_Height = Height;
+	Cmd.m_pSuccess = &Success;
+	AddCmd(Cmd);
+	KickCommandBuffer();
+	m_pBackend->WaitForIdle();
+
+	if(!Success)
+	{
+		UnloadTexture(&Target);
+		return CTextureHandle();
+	}
+	return Target;
+}
+
+void CGraphics_Threaded::BeginRenderTarget(CTextureHandle Target, int Width, int Height)
+{
+	if(!Target.IsValid() || Width <= 0 || Height <= 0)
+		return;
+
+	CCommandBuffer::SCommand_RenderTarget_Begin Cmd;
+	Cmd.m_Slot = Target.Id();
+	Cmd.m_Width = Width;
+	Cmd.m_Height = Height;
+	AddCmd(Cmd);
+}
+
+void CGraphics_Threaded::EndRenderTarget()
+{
+	CCommandBuffer::SCommand_RenderTarget_End Cmd;
+	AddCmd(Cmd);
+}
+
+void CGraphics_Threaded::DestroyRenderTarget(CTextureHandle *pTarget)
+{
+	if(pTarget && pTarget->IsValid())
+		UnloadTexture(pTarget);
+}
+
+
 void CGraphics_Threaded::QuadsBegin()
 {
 	dbg_assert(m_Drawing == EDrawing::NONE, "called Graphics()->QuadsBegin twice");
