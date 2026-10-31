@@ -13,7 +13,6 @@ class CSpectator : public CComponent
 {
 	enum
 	{
-		MULTI_VIEW = -4,
 		NO_SELECTION = -3,
 	};
 
@@ -25,7 +24,6 @@ class CSpectator : public CComponent
 
 	CUi::CTouchState m_TouchState;
 
-	float m_MultiViewActivateDelay;
 
 	bool CanChangeSpectatorId();
 	void SpectateNext(bool Reverse);
@@ -35,7 +33,6 @@ class CSpectator : public CComponent
 	static void ConSpectateNext(IConsole::IResult *pResult, void *pUserData);
 	static void ConSpectatePrevious(IConsole::IResult *pResult, void *pUserData);
 	static void ConSpectateClosest(IConsole::IResult *pResult, void *pUserData);
-	static void ConMultiView(IConsole::IResult *pResult, void *pUserData);
 
 public:
 	CSpectator();
