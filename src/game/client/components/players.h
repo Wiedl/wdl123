@@ -7,8 +7,11 @@
 #include <game/client/component.h>
 #include <game/client/render.h>
 
+class CCamera;
+
 class CPlayers : public CComponent
 {
+	const CCamera *m_pCameraOverride = nullptr;
 	friend class CGhost;
 
 	void RenderHand6(const CTeeRenderInfo *pInfo, vec2 HandPos, float HandAngle, float Alpha);
@@ -57,6 +60,7 @@ public:
 	int Sizeof() const override { return sizeof(*this); }
 	void OnInit() override;
 	void OnRender() override;
+	void RenderForCamera(const CCamera *pCamera);
 
 	const std::shared_ptr<CManagedTeeRenderInfo> &NinjaTeeRenderInfo() const { return m_pNinjaTeeRenderInfo; }
 	const std::shared_ptr<CManagedTeeRenderInfo> &SpectatorTeeRenderInfo() const { return m_pSpectatorTeeRenderInfo; }
