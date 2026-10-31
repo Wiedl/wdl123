@@ -28,7 +28,7 @@ void CMapLayers::OnInit()
 
 CCamera *CMapLayers::GetCurCamera()
 {
-	return &GameClient()->m_Camera;
+	return m_pCameraOverride ? m_pCameraOverride : &GameClient()->m_Camera;
 }
 
 void CMapLayers::OnMapLoad()
