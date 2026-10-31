@@ -126,29 +126,10 @@ bool CBee::OnInput(const IInput::CEvent &Event)
 			Mouse.y < g_Config.m_ClBeeY || Mouse.y > g_Config.m_ClBeeY + g_Config.m_ClBeeHeight)
 			return false;
 
-		int aActiveIds[MAX_CLIENTS];
-		int NumActive = 0;
-		for(int ClientId = 0; ClientId < MAX_CLIENTS; ++ClientId)
-			if(GameClient()->m_Snap.m_aCharacters[ClientId].m_Active)
-				aActiveIds[NumActive++] = ClientId;
-		if(NumActive == 0)
-		{
-			g_Config.m_ClBeeTargetName[0] = 0;
-			return true;
-		}
-
-		const int Direction = Event.m_Key == KEY_MOUSE_WHEEL_UP ? -1 : 1;
-		int Index = -1;
-		for(int i = 0; i < NumActive; ++i)
-		{
-			const char *pName = GameClient()->m_aClients[aActiveIds[i]].m_aName;
-			if(str_comp_nocase(pName, g_Config.m_ClBeeTargetName) == 0)
-				Index = i;
-		}
-		if(Index < 0)
-			Index = Direction > 0 ? -1 : 0;
-		const int TargetId = aActiveIds[(Index + Direction + NumActive) % NumActive];
-		str_copy(g_Config.m_ClBeeTargetName, GameClient()->m_aClients[TargetId].m_aName, sizeof(g_Config.m_ClBeeTargetName));
+		// The Bee wheel controls only the secondary camera zoom. It must never
+		// alter the main camera or the selected player.
+		const float ZoomFactor = Event.m_Key == KEY_MOUSE_WHEEL_UP ? 0.85f : 1.18f;
+		g_Config.m_ClBeeZoom = std::clamp((int)std::round(g_Config.m_ClBeeZoom * ZoomFactor), 100, 2000);
 		return true;
 	}
 
@@ -255,18 +236,18 @@ void CBee::OnRender()
 	else
 		Center = GameClient()->m_Camera.m_Center;
 
-	float ViewZoom = std::max(1.0f, g_Config.m_ClBeeZoom / 100.0f);
+	float ViewZoom = std::clamp(g_Config.m_ClBeeZoom / 100.0f, 1.0f, 20.0f);
 	if(g_Config.m_ClBeeTargetName[0] != 0 && TargetFound)
 	{
 		Center = TargetPos;
 	}
 	else if(NumPlayers > 0)
 	{
+		// Fit all active players into the Bee viewport without changing the
+		// user's zoom preference or the primary camera.
 		const float Aspect = BeeRect.w / BeeRect.h;
 		const float NeededHeight = std::max(MaxPos.y - MinPos.y, (MaxPos.x - MinPos.x) / Aspect) * 1.2f;
-		const float CurrentHeight = 300.0f * ViewZoom * BeeRect.h / pScreen->h;
-		if(NeededHeight > CurrentHeight)
-			ViewZoom *= NeededHeight / CurrentHeight;
+		ViewZoom = std::max(ViewZoom, NeededHeight / 300.0f);
 	}
 
 	// Clip the normal framebuffer to the movable Bee panel. The game camera itself is never modified.
@@ -277,16 +258,37 @@ void CBee::OnRender()
 	const int ClipH = (int)std::round((BeeRect.h - 2.0f * PanelInset) * Graphics()->ScreenHeight() / pScreen->h);
 	auto EnableBeeClip = [&]() { Graphics()->ClipEnable(ClipX, ClipY, ClipW, ClipH); };
 
-	Graphics()->MapScreenToInterface(Center.x, Center.y, ViewZoom);
+	// Map the Bee panel to its own world rectangle. Mapping the whole screen
+	// directly to the Bee camera and then clipping a corner makes the panel
+	// show an offset part of the world. Compensate for the panel's position
+	// and aspect ratio so its center always corresponds to Center.
+	const float BeeWorldHeight = 300.0f * ViewZoom;
+	const float FullWorldHeight = BeeWorldHeight * pScreen->h / BeeRect.h;
+	const float FullWorldWidth = FullWorldHeight * pScreen->w / pScreen->h;
+	const float PanelCenterX = (BeeRect.x + BeeRect.w * 0.5f) / pScreen->w;
+	const float PanelCenterY = (BeeRect.y + BeeRect.h * 0.5f) / pScreen->h;
+	const float WorldLeft = Center.x - PanelCenterX * FullWorldWidth;
+	const float WorldTop = Center.y - PanelCenterY * FullWorldHeight;
+	Graphics()->MapScreen(CScreenRect(WorldLeft, WorldTop, FullWorldWidth, FullWorldHeight));
 	EnableBeeClip();
 	if(g_Config.m_ClOverlayEntities != 100)
 	{
 		GameClient()->m_MapLayersBackground.OnRenderBee(Center, ViewZoom);
 		EnableBeeClip();
 	}
+	GameClient()->m_MovingTilesBackground.OnRender();
+	EnableBeeClip();
+	GameClient()->m_Items.OnRender();
+	EnableBeeClip();
+	GameClient()->m_Players.OnRender();
+	EnableBeeClip();
 	GameClient()->m_MapLayersForeground.OnRenderBee(Center, ViewZoom);
 	EnableBeeClip();
-	GameClient()->m_Players.RenderBee();
+	GameClient()->m_MovingTilesForeground.OnRender();
+	EnableBeeClip();
+	GameClient()->m_NamePlates.OnRender();
+	EnableBeeClip();
+	GameClient()->m_FreezeBars.OnRender();
 
 	Graphics()->ClipDisable();
 	Graphics()->MapScreen(MainScreen);
