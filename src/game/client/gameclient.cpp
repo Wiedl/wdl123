@@ -201,10 +201,7 @@ void CBee::OnRender()
 	Ui()->MapScreen();
 	BeeRect.Draw(ColorRGBA(0.015f, 0.02f, 0.03f, 0.88f), IGraphics::CORNER_ALL, 8.0f);
 
-	int NumPlayers = 0;
-	vec2 Center(0.0f, 0.0f);
-	vec2 MinPos(std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
-	vec2 MaxPos(std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest());
+	vec2 Center = GameClient()->m_Camera.m_Center;
 	vec2 TargetPos(0.0f, 0.0f);
 	bool TargetFound = false;
 	const float Intra = Client()->IntraGameTick(g_Config.m_ClDummy);
@@ -218,23 +215,12 @@ void CBee::OnRender()
 		const vec2 Pos = mix(
 			vec2(ClientData.m_RenderPrev.m_X, ClientData.m_RenderPrev.m_Y),
 			vec2(ClientData.m_RenderCur.m_X, ClientData.m_RenderCur.m_Y), Intra);
-		MinPos.x = std::min(MinPos.x, Pos.x);
-		MinPos.y = std::min(MinPos.y, Pos.y);
-		MaxPos.x = std::max(MaxPos.x, Pos.x);
-		MaxPos.y = std::max(MaxPos.y, Pos.y);
-		++NumPlayers;
-
 		if(g_Config.m_ClBeeTargetName[0] != 0 && str_comp_nocase(GameClient()->m_aClients[ClientId].m_aName, g_Config.m_ClBeeTargetName) == 0)
 		{
 			TargetPos = Pos;
 			TargetFound = true;
 		}
 	}
-
-	if(NumPlayers > 0)
-		Center = GameClient()->m_Camera.m_Center;
-	else
-		Center = GameClient()->m_Camera.m_Center;
 
 	const float BeeAspect = BeeRect.w / BeeRect.h;
 	float ViewZoom = std::clamp(g_Config.m_ClBeeZoom / 100.0f, 1.0f, 20.0f);
