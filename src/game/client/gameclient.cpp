@@ -248,7 +248,7 @@ void CBee::OnRender()
 	}
 
 	if(NumPlayers > 0)
-		Center /= (float)NumPlayers;
+		Center = (MinPos + MaxPos) * 0.5f;
 	else
 		Center = GameClient()->m_Camera.m_Center;
 
