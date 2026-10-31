@@ -61,6 +61,7 @@
 #include <engine/favorites.h>
 #include <engine/friends.h>
 #include <engine/graphics.h>
+#include <engine/keys.h>
 #include <engine/map.h>
 #include <engine/serverbrowser.h>
 #include <engine/shared/config.h>
@@ -87,6 +88,186 @@
 #include <limits>
 
 using namespace std::chrono_literals;
+
+
+vec2 CBee::MousePosition() const
+{
+	const CUIRect *pScreen = Ui()->Screen();
+	if(!pScreen || Graphics()->WindowWidth() <= 0 || Graphics()->WindowHeight() <= 0)
+		return vec2(0.0f, 0.0f);
+
+	const vec2 Native = Input()->NativeMousePos();
+	return vec2(
+		Native.x * pScreen->w / Graphics()->WindowWidth(),
+		Native.y * pScreen->h / Graphics()->WindowHeight());
+}
+
+bool CBee::OnInput(const IInput::CEvent &Event)
+{
+	if(!g_Config.m_ClBeeEnabled || GameClient()->m_Menus.IsActive() ||
+		Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
+		return false;
+
+	if(Event.m_Key != KEY_MOUSE_1)
+		return false;
+
+	if(Event.m_Flags & IInput::FLAG_PRESS)
+	{
+		const vec2 Mouse = MousePosition();
+		const float X = g_Config.m_ClBeeX;
+		const float Y = g_Config.m_ClBeeY;
+		const float W = g_Config.m_ClBeeWidth;
+		const float H = g_Config.m_ClBeeHeight;
+		if(Mouse.x < X || Mouse.x > X + W || Mouse.y < Y || Mouse.y > Y + H)
+			return false;
+
+		m_Resizing = Mouse.x >= X + W - 20.0f && Mouse.y >= Y + H - 20.0f;
+		m_Dragging = !m_Resizing && Mouse.y <= Y + 26.0f;
+		return m_Dragging || m_Resizing;
+	}
+
+	if(Event.m_Flags & IInput::FLAG_RELEASE)
+	{
+		const bool WasInteracting = m_Dragging || m_Resizing;
+		m_Dragging = false;
+		m_Resizing = false;
+		return WasInteracting;
+	}
+
+	return false;
+}
+
+bool CBee::OnCursorMove(float x, float y, IInput::ECursorType CursorType)
+{
+	if(!m_Dragging && !m_Resizing)
+		return false;
+
+	const CUIRect *pScreen = Ui()->Screen();
+	if(!pScreen || Graphics()->WindowWidth() <= 0 || Graphics()->WindowHeight() <= 0)
+		return false;
+
+	const float ScaleX = pScreen->w / Graphics()->WindowWidth();
+	const float ScaleY = pScreen->h / Graphics()->WindowHeight();
+	if(m_Dragging)
+	{
+		g_Config.m_ClBeeX = std::clamp(g_Config.m_ClBeeX + (int)std::round(x * ScaleX), 0, std::max(0, (int)pScreen->w - g_Config.m_ClBeeWidth));
+		g_Config.m_ClBeeY = std::clamp(g_Config.m_ClBeeY + (int)std::round(y * ScaleY), 0, std::max(0, (int)pScreen->h - g_Config.m_ClBeeHeight));
+	}
+	else
+	{
+		g_Config.m_ClBeeWidth = std::clamp(g_Config.m_ClBeeWidth + (int)std::round(x * ScaleX), 160, 1200);
+		g_Config.m_ClBeeHeight = std::clamp(g_Config.m_ClBeeHeight + (int)std::round(y * ScaleY), 100, 800);
+	}
+	return true;
+}
+
+void CBee::OnRender()
+{
+	if(!g_Config.m_ClBeeEnabled || GameClient()->m_Menus.IsActive() ||
+		(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK))
+		return;
+
+	const CUIRect *pScreen = Ui()->Screen();
+	if(!pScreen || pScreen->w <= 0.0f || pScreen->h <= 0.0f)
+		return;
+
+	CUIRect BeeRect;
+	BeeRect.x = std::clamp((float)g_Config.m_ClBeeX, 0.0f, std::max(0.0f, pScreen->w - 160.0f));
+	BeeRect.y = std::clamp((float)g_Config.m_ClBeeY, 0.0f, std::max(0.0f, pScreen->h - 100.0f));
+	BeeRect.w = std::min((float)g_Config.m_ClBeeWidth, pScreen->w - BeeRect.x);
+	BeeRect.h = std::min((float)g_Config.m_ClBeeHeight, pScreen->h - BeeRect.y);
+	if(BeeRect.w < 160.0f || BeeRect.h < 100.0f)
+		return;
+
+	const CScreenRect MainScreen = Graphics()->GetScreen();
+	Ui()->MapScreen();
+	BeeRect.Draw(ColorRGBA(0.015f, 0.02f, 0.03f, 0.88f), IGraphics::CORNER_ALL, 8.0f);
+
+	int NumPlayers = 0;
+	vec2 Center(0.0f, 0.0f);
+	vec2 MinPos(std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
+	vec2 MaxPos(std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest());
+	vec2 TargetPos(0.0f, 0.0f);
+	bool TargetFound = false;
+	const float Intra = Client()->IntraGameTick(g_Config.m_ClDummy);
+
+	for(int ClientId = 0; ClientId < MAX_CLIENTS; ++ClientId)
+	{
+		if(!GameClient()->m_Snap.m_aCharacters[ClientId].m_Active)
+			continue;
+
+		const auto &ClientData = GameClient()->m_aClients[ClientId];
+		const vec2 Pos = mix(
+			vec2(ClientData.m_RenderPrev.m_X, ClientData.m_RenderPrev.m_Y),
+			vec2(ClientData.m_RenderCur.m_X, ClientData.m_RenderCur.m_Y), Intra);
+		Center += Pos;
+		MinPos.x = std::min(MinPos.x, Pos.x);
+		MinPos.y = std::min(MinPos.y, Pos.y);
+		MaxPos.x = std::max(MaxPos.x, Pos.x);
+		MaxPos.y = std::max(MaxPos.y, Pos.y);
+		++NumPlayers;
+
+		if(ClientId == g_Config.m_ClBeeTarget)
+		{
+			TargetPos = Pos;
+			TargetFound = true;
+		}
+	}
+
+	if(NumPlayers > 0)
+		Center /= (float)NumPlayers;
+	else
+		Center = GameClient()->m_Camera.m_Center;
+
+	float ViewZoom = std::max(1.0f, g_Config.m_ClBeeZoom / 100.0f);
+	if(g_Config.m_ClBeeTarget >= 0 && TargetFound)
+	{
+		Center = TargetPos;
+	}
+	else if(NumPlayers > 0)
+	{
+		const float Aspect = BeeRect.w / BeeRect.h;
+		const float NeededHeight = std::max(MaxPos.y - MinPos.y, (MaxPos.x - MinPos.x) / Aspect) * 1.2f;
+		const float CurrentHeight = 300.0f * ViewZoom * BeeRect.h / pScreen->h;
+		if(NeededHeight > CurrentHeight)
+			ViewZoom *= NeededHeight / CurrentHeight;
+	}
+
+	// Clip the normal framebuffer to the movable Bee panel. The game camera itself is never modified.
+	const int ClipX = (int)std::round(BeeRect.x * Graphics()->ScreenWidth() / pScreen->w);
+	const int ClipY = (int)std::round(BeeRect.y * Graphics()->ScreenHeight() / pScreen->h);
+	const int ClipW = (int)std::round(BeeRect.w * Graphics()->ScreenWidth() / pScreen->w);
+	const int ClipH = (int)std::round(BeeRect.h * Graphics()->ScreenHeight() / pScreen->h);
+	auto EnableBeeClip = [&]() { Graphics()->ClipEnable(ClipX, ClipY, ClipW, ClipH); };
+
+	Graphics()->MapScreenToInterface(Center.x, Center.y, ViewZoom);
+	EnableBeeClip();
+	if(g_Config.m_ClOverlayEntities != 100)
+	{
+		GameClient()->m_MapLayersBackground.OnRenderBee(Center, ViewZoom);
+		EnableBeeClip();
+	}
+	GameClient()->m_MapLayersForeground.OnRenderBee(Center, ViewZoom);
+	EnableBeeClip();
+	GameClient()->m_Players.RenderBee();
+
+	Graphics()->ClipDisable();
+	Graphics()->MapScreen(MainScreen);
+
+	// Draw the panel chrome after the world so it remains legible and draggable.
+	Ui()->MapScreen();
+	CUIRect Header = BeeRect;
+	Header.h = 26.0f;
+	Header.Draw(ColorRGBA(0.025f, 0.03f, 0.045f, 0.94f), IGraphics::CORNER_T, 8.0f);
+	Ui()->DoLabel(&Header, "BEE  |  SECOND CAMERA", 13.0f, TEXTALIGN_ML);
+
+	CUIRect ResizeGrip;
+	ResizeGrip.x = BeeRect.x + BeeRect.w - 14.0f;
+	ResizeGrip.y = BeeRect.y + BeeRect.h - 14.0f;
+	ResizeGrip.w = 10.0f;
+	ResizeGrip.h = 10.0f;
+	ResizeGrip.Draw(ColorRGBA(0.75f, 0.8f, 0.9f, 0.8f), IGraphics::CORNER_ALL, 2.0f);
+}
 
 const char *CGameClient::Version() const { return GAME_VERSION; }
 const char *CGameClient::NetVersion() const { return GAME_NETVERSION; }
