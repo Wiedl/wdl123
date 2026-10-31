@@ -25,6 +25,7 @@ class CMapLayers : public CComponent
 	CMapImages *m_pImages;
 	ERenderType m_Type;
 	bool m_OnlineOnly;
+	CCamera *m_pCameraOverride = nullptr;
 
 public:
 	CMapLayers(ERenderType Type, bool OnlineOnly = true);
@@ -34,6 +35,7 @@ public:
 	void OnMapLoad() override;
 
 	virtual CCamera *GetCurCamera();
+	void SetCameraOverride(CCamera *pCamera) { m_pCameraOverride = pCamera; }
 
 	CEnvelopeState &EnvEvaluator() { return m_EnvEvaluator; }
 
