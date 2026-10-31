@@ -233,7 +233,6 @@ void CBee::OnRender()
 		const vec2 Pos = mix(
 			vec2(ClientData.m_RenderPrev.m_X, ClientData.m_RenderPrev.m_Y),
 			vec2(ClientData.m_RenderCur.m_X, ClientData.m_RenderCur.m_Y), Intra);
-		Center += Pos;
 		MinPos.x = std::min(MinPos.x, Pos.x);
 		MinPos.y = std::min(MinPos.y, Pos.y);
 		MaxPos.x = std::max(MaxPos.x, Pos.x);
