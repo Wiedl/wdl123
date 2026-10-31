@@ -3,6 +3,8 @@
 #ifndef GAME_CLIENT_COMPONENTS_MAPLAYERS_H
 #define GAME_CLIENT_COMPONENTS_MAPLAYERS_H
 
+#include <base/vmath.h>
+
 #include <game/client/component.h>
 #include <game/client/components/envelope_state.h>
 #include <game/map/map_renderer.h>
