@@ -429,7 +429,7 @@ void CMenus::RenderSettingsBee(CUIRect MainView)
 	Ui()->DoLabel(&Row, Localize("Drag the top bar to move it; drag the lower-right corner to resize."), 14.0f, TEXTALIGN_ML);
 
 	MainView.HSplitTop(24.0f, &Row, &MainView);
-	Ui()->DoLabel(&Row, Localize("Scroll over the Bee panel to select a player. Use cl_bee_target -1 to fit all visible players."), 14.0f, TEXTALIGN_ML);
+	Ui()->DoLabel(&Row, Localize("Set cl_bee_target_name to a player nickname; leave it empty to fit all visible players. Scroll over Bee to cycle player names."), 14.0f, TEXTALIGN_ML);
 
 	MainView.HSplitTop(24.0f, &Row, &MainView);
 	Ui()->DoLabel(&Row, Localize("Position, size and zoom are saved in the client configuration."), 14.0f, TEXTALIGN_ML);
