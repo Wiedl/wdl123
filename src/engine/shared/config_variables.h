@@ -126,6 +126,13 @@ MACRO_CONFIG_INT(ClDyncamStabilizing, cl_dyncam_stabilizing, 0, 0, 100, CFGFLAG_
 
 MACRO_CONFIG_INT(ClMultiViewSensitivity, cl_multiview_sensitivity, 100, 0, 200, CFGFLAG_CLIENT | CFGFLAG_INSENSITIVE, "Set how fast the camera will move to the desired location (higher = faster)")
 MACRO_CONFIG_INT(ClMultiViewZoomSmoothness, cl_multiview_zoom_smoothness, 1300, 50, 5000, CFGFLAG_CLIENT | CFGFLAG_INSENSITIVE, "Set the smoothness of the multi-view zoom (in ms, higher = slower)")
+MACRO_CONFIG_INT(ClBeeEnabled, cl_bee_enabled, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable the Bee secondary camera overlay")
+MACRO_CONFIG_INT(ClBeeX, cl_bee_x, 40, 0, 2000, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Bee overlay horizontal position in interface units")
+MACRO_CONFIG_INT(ClBeeY, cl_bee_y, 40, 0, 2000, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Bee overlay vertical position in interface units")
+MACRO_CONFIG_INT(ClBeeWidth, cl_bee_width, 360, 160, 1200, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Bee overlay width in interface units")
+MACRO_CONFIG_INT(ClBeeHeight, cl_bee_height, 220, 100, 800, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Bee overlay height in interface units")
+MACRO_CONFIG_INT(ClBeeZoom, cl_bee_zoom, 250, 100, 2000, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Bee camera zoom-out factor in percent")
+MACRO_CONFIG_INT(ClBeeTarget, cl_bee_target, -1, -1, 63, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Bee camera target client ID, -1 fits all visible players")
 
 MACRO_CONFIG_INT(ClSpectatorMouseclicks, cl_spectator_mouseclicks, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enables left-click to toggle between spectating the closest player and free-view")
 MACRO_CONFIG_INT(ClSmoothSpectatingTime, cl_smooth_spectating_time, 300, 0, 5000, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Time of smooth camera switch animation when spectating in ms (0 for off)")
