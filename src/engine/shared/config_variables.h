@@ -11,6 +11,15 @@
 #define MACRO_CONFIG_STR(Name, ScriptName, Len, Def, Save, Desc)
 #endif
 
+// Bee independent picture-in-picture view
+MACRO_CONFIG_INT(ClBeeEnabled, cl_bee_enabled, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable the independent Bee view")
+MACRO_CONFIG_INT(ClBeeTarget, cl_bee_target, -1, -1, 63, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Bee target client ID, -1 follows the local player")
+MACRO_CONFIG_INT(ClBeeZoom, cl_bee_zoom, 100, 25, 400, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Bee view zoom percentage")
+MACRO_CONFIG_INT(ClBeeX, cl_bee_x, 20, 0, 100000, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Bee view left position")
+MACRO_CONFIG_INT(ClBeeY, cl_bee_y, 20, 0, 100000, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Bee view top position")
+MACRO_CONFIG_INT(ClBeeWidth, cl_bee_width, 320, 160, 1280, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Bee view width")
+MACRO_CONFIG_INT(ClBeeHeight, cl_bee_height, 180, 90, 720, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Bee view height")
+
 // client
 MACRO_CONFIG_INT(ClPredict, cl_predict, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Predict client movements")
 MACRO_CONFIG_INT(ClPredictDummy, cl_predict_dummy, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Predict dummy movements")
