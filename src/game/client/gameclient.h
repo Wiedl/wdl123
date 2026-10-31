@@ -29,6 +29,7 @@
 
 // components
 #include "components/background.h"
+#include "components/bee.h"
 #include "components/binds.h"
 #include "components/broadcast.h"
 #include "components/camera.h"
@@ -212,6 +213,7 @@ public:
 	CMapLayers m_MapLayersBackground = CMapLayers{ERenderType::RENDERTYPE_BACKGROUND};
 	CMapLayers m_MapLayersForeground = CMapLayers{ERenderType::RENDERTYPE_FOREGROUND};
 	CBackground m_Background;
+	CBee m_Bee;
 	CMenuBackground m_MenuBackground;
 
 	CMapSounds m_MapSounds;
