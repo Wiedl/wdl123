@@ -257,6 +257,8 @@ void CBee::OnRender()
 	else
 		GameClient()->m_Background.OnRenderBee(Center, ViewZoom);
 	EnableBeeClip();
+	GameClient()->m_MapLayersForeground.OnRenderBee(Center, ViewZoom);
+	EnableBeeClip();
 	// Bee deliberately renders only map geometry and cached player tees.
 	// Dynamic game components are not invoked a second time here: several of
 	// them mutate frame state or emit effects during their normal render pass.
@@ -269,7 +271,7 @@ void CBee::OnRender()
 	Ui()->MapScreen();
 	CUIRect Header = BeeRect;
 	Header.h = 26.0f;
-	Header.Draw(ColorRGBA(0.025f, 0.03f, 0.045f, 0.94f), IGraphics::CORNER_T, 8.0f);
+	Header.Draw(color_cast<ColorRGBA>(ColorHSLA(g_Config.m_UiColor, true)).WithAlpha(0.96f), IGraphics::CORNER_T, 8.0f);
 	char aTitle[128];
 	if(g_Config.m_ClBeeTargetName[0] != 0 && TargetFound)
 		str_format(aTitle, sizeof(aTitle), "BEE  |  %s", g_Config.m_ClBeeTargetName);
