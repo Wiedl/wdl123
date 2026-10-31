@@ -322,6 +322,12 @@ public:
 	// ForceClearNow forces the backend to trigger a clear, even at performance cost, else it might be delayed by one frame
 	virtual void Clear(float r, float g, float b, bool ForceClearNow = false) = 0;
 
+	// Off-screen render targets. Unsupported backends return an invalid texture handle.
+	virtual CTextureHandle CreateRenderTarget(int Width, int Height) = 0;
+	virtual void BeginRenderTarget(CTextureHandle Target, int Width, int Height) = 0;
+	virtual void EndRenderTarget() = 0;
+	virtual void DestroyRenderTarget(CTextureHandle *pTarget) = 0;
+
 	virtual void ClipEnable(int x, int y, int w, int h) = 0;
 	virtual void ClipDisable() = 0;
 
