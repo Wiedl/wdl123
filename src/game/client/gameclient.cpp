@@ -275,10 +275,10 @@ void CBee::OnRender()
 	Graphics()->MapScreen(CScreenRect(WorldLeft, WorldTop, FullWorldWidth, FullWorldHeight));
 	EnableBeeClip();
 	if(g_Config.m_ClOverlayEntities != 100)
-	{
 		GameClient()->m_MapLayersBackground.OnRenderBee(Center, ViewZoom);
-		EnableBeeClip();
-	}
+	else
+		GameClient()->m_Background.OnRenderBee(Center, ViewZoom);
+	EnableBeeClip();
 	GameClient()->m_Particles.RenderBeeBackground();
 	EnableBeeClip();
 	GameClient()->m_Items.OnRender();
