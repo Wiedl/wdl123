@@ -467,6 +467,25 @@ void CMenus::RenderSettingsBee(CUIRect MainView)
 	MainView.HSplitTop(24.0f, &Row, &MainView);
 	Ui()->DoLabel(&Row, Localize("Drag the top bar to move Bee; drag its lower-right corner to resize it."), 14.0f, TEXTALIGN_ML);
 
+	MainView.HSplitTop(30.0f, &Row, &MainView);
+	CUIRect DistanceLabel, DistanceMinus, DistanceValue, DistancePlus;
+	Row.VSplitLeft(150.0f, &DistanceLabel, &DistanceMinus);
+	DistanceMinus.VSplitLeft(30.0f, &DistanceMinus, &DistanceValue);
+	DistanceValue.VSplitLeft(92.0f, &DistanceValue, &DistancePlus);
+	Ui()->DoLabel(&DistanceLabel, Localize("Player render distance:"), 14.0f, TEXTALIGN_ML);
+	static CButtonContainer s_BeeDistanceMinus;
+	static CButtonContainer s_BeeDistancePlus;
+	if(DoButton_Menu(&s_BeeDistanceMinus, "-", 0, &DistanceMinus))
+		g_Config.m_ClBeePlayerDistance = std::max(100, g_Config.m_ClBeePlayerDistance - 500);
+	char aDistance[32];
+	str_format(aDistance, sizeof(aDistance), "%d", g_Config.m_ClBeePlayerDistance);
+	Ui()->DoLabel(&DistanceValue, aDistance, 14.0f, TEXTALIGN_MC);
+	if(DoButton_Menu(&s_BeeDistancePlus, "+", 0, &DistancePlus))
+		g_Config.m_ClBeePlayerDistance = std::min(20000, g_Config.m_ClBeePlayerDistance + 500);
+
 	MainView.HSplitTop(24.0f, &Row, &MainView);
-	Ui()->DoLabel(&Row, Localize("Bee position, size, target player and zoom are saved in the client configuration."), 14.0f, TEXTALIGN_ML);
+	Ui()->DoLabel(&Row, Localize("You can also set the target nickname with cl_bee_target_name in the console."), 14.0f, TEXTALIGN_ML);
+
+	MainView.HSplitTop(24.0f, &Row, &MainView);
+	Ui()->DoLabel(&Row, Localize("Bee position, size, target, zoom and player distance are saved in the client configuration."), 14.0f, TEXTALIGN_ML);
 }
