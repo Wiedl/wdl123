@@ -1123,7 +1123,7 @@ inline bool CPlayers::IsPlayerInfoAvailable(int ClientId) const
 	       GameClient()->m_Snap.m_apPlayerInfos[ClientId] != nullptr;
 }
 
-void CPlayers::RenderBee()
+void CPlayers::RenderBee(vec2 Center, float MaxDistance)
 {
 	if(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
 		return;
@@ -1141,7 +1141,7 @@ void CPlayers::RenderBee()
 
 		const auto &ClientData = GameClient()->m_aClients[ClientId];
 		const vec2 Position = ClientData.m_RenderPos;
-		if(!ScreenRect.Inside(Position))
+		if(length(Position - Center) > MaxDistance || !ScreenRect.Inside(Position))
 			continue;
 
 		CTeeRenderInfo RenderInfo = ClientData.m_RenderInfo;
