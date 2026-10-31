@@ -267,7 +267,7 @@ void CBee::OnRender()
 	float BeeWorldWidth, BeeWorldHeight;
 	Graphics()->CalcScreenParams(BeeAspect, ViewZoom, &BeeWorldWidth, &BeeWorldHeight);
 	const float FullWorldHeight = BeeWorldHeight * pScreen->h / BeeRect.h;
-	const float FullWorldWidth = FullWorldHeight * pScreen->w / pScreen->h;
+	const float FullWorldWidth = BeeWorldWidth * pScreen->w / BeeRect.w;
 	const float PanelCenterX = (BeeRect.x + BeeRect.w * 0.5f) / pScreen->w;
 	const float PanelCenterY = (BeeRect.y + BeeRect.h * 0.5f) / pScreen->h;
 	const float WorldLeft = Center.x - PanelCenterX * FullWorldWidth;
