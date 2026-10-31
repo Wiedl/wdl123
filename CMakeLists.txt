@@ -2769,6 +2769,7 @@ if(CLIENT)
     component.h
     components/background.cpp
     components/background.h
+    components/bee.h
     components/binds.cpp
     components/binds.h
     components/broadcast.cpp
