@@ -248,8 +248,8 @@ void CBee::OnRender()
 		// user's zoom preference or the primary camera.
 		float BaseWidth, BaseHeight;
 		Graphics()->CalcScreenParams(BeeAspect, 1.0f, &BaseWidth, &BaseHeight);
-		const float NeededHeight = std::max(MaxPos.y - MinPos.y, (MaxPos.x - MinPos.x) / BeeAspect) * 1.2f;
-		ViewZoom = std::max(ViewZoom, NeededHeight / BaseHeight);
+		const float NeededZoom = std::max((MaxPos.y - MinPos.y) / BaseHeight, (MaxPos.x - MinPos.x) / BaseWidth) * 1.2f;
+		ViewZoom = std::max(ViewZoom, NeededZoom);
 	}
 
 	// Clip the normal framebuffer to the movable Bee panel. The game camera itself is never modified.
