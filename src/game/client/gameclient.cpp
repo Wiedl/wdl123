@@ -162,6 +162,7 @@ void CGameClient::OnConsoleInit()
 					      &m_FreezeBars,
 					      &m_DamageInd,
 					      &m_PlayerIndicator, // TClient
+					      &m_Bee, // independent Bee viewport
 					      &m_Mod, // TClient
 					      &m_CustomCommunities, // TClient
 					      &m_Hud,
@@ -199,6 +200,7 @@ void CGameClient::OnConsoleInit()
 						  &m_Emoticon,
 						  &m_ImportantAlert,
 						  &m_Menus,
+						  &m_Bee,
 						  &m_Controls,
 						  &m_TouchControls,
 						  &m_Binds});
