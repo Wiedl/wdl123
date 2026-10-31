@@ -151,6 +151,7 @@ void CGameClient::OnConsoleInit()
 					      &m_Players,
 					      &m_MovingTilesBackground, // TClient
 					      &m_MapLayersForeground,
+					      &m_Bee, // Bee secondary-view lifecycle component
 					      &m_MovingTilesForeground, // TClient
 					      &m_Outlines, // TClient
 					      &m_Mumble, // TClient
