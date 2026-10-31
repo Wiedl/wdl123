@@ -464,7 +464,7 @@ void CMenus::RenderSettingsBee(CUIRect MainView)
 	}
 
 	MainView.HSplitTop(24.0f, &Row, &MainView);
-	Ui()->DoLabel(&Row, Localize("Use the mouse wheel over Bee to zoom its camera in or out."), 14.0f, TEXTALIGN_ML);
+	Ui()->DoLabel(&Row, Localize("Use the mouse wheel over Bee to zoom its view. The main camera FOV stays unchanged."), 14.0f, TEXTALIGN_ML);
 
 	MainView.HSplitTop(24.0f, &Row, &MainView);
 	Ui()->DoLabel(&Row, Localize("Drag the top bar to move Bee; drag its lower-right corner to resize it."), 14.0f, TEXTALIGN_ML);
@@ -485,9 +485,25 @@ void CMenus::RenderSettingsBee(CUIRect MainView)
 	if(DoButton_Menu(&s_BeeDistancePlus, "+", 0, &DistancePlus))
 		g_Config.m_ClBeePlayerDistance = std::min(20000, g_Config.m_ClBeePlayerDistance + 500);
 
+	MainView.HSplitTop(30.0f, &Row, &MainView);
+	CUIRect NetworkLabel, NetworkMinus, NetworkValue, NetworkPlus;
+	Row.VSplitLeft(150.0f, &NetworkLabel, &NetworkMinus);
+	NetworkMinus.VSplitLeft(30.0f, &NetworkMinus, &NetworkValue);
+	NetworkValue.VSplitLeft(92.0f, &NetworkValue, &NetworkPlus);
+	Ui()->DoLabel(&NetworkLabel, Localize("Network visibility:"), 14.0f, TEXTALIGN_ML);
+	static CButtonContainer s_BeeNetworkMinus;
+	static CButtonContainer s_BeeNetworkPlus;
+	if(DoButton_Menu(&s_BeeNetworkMinus, "-", 0, &NetworkMinus))
+		g_Config.m_ClBeeNetworkDistance = std::max(100, g_Config.m_ClBeeNetworkDistance - 25);
+	char aNetworkDistance[32];
+	str_format(aNetworkDistance, sizeof(aNetworkDistance), "%d%% (%.2fx)", g_Config.m_ClBeeNetworkDistance, g_Config.m_ClBeeNetworkDistance / 100.0f);
+	Ui()->DoLabel(&NetworkValue, aNetworkDistance, 14.0f, TEXTALIGN_MC);
+	if(DoButton_Menu(&s_BeeNetworkPlus, "+", 0, &NetworkPlus))
+		g_Config.m_ClBeeNetworkDistance = std::min(300, g_Config.m_ClBeeNetworkDistance + 25);
+
 	MainView.HSplitTop(24.0f, &Row, &MainView);
 	Ui()->DoLabel(&Row, Localize("You can also set the target nickname with cl_bee_target_name in the console."), 14.0f, TEXTALIGN_ML);
 
 	MainView.HSplitTop(24.0f, &Row, &MainView);
-	Ui()->DoLabel(&Row, Localize("Bee position, size, target, zoom and player distance are saved in the client configuration."), 14.0f, TEXTALIGN_ML);
+	Ui()->DoLabel(&Row, Localize("Bee position, size, target, zoom, player distance and network visibility are saved in the client configuration."), 14.0f, TEXTALIGN_ML);
 }
