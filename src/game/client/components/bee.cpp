@@ -43,6 +43,7 @@ void CBee::OnRender()
 	GameClient()->m_MapLayersBackground.SetCameraOverride(&m_Camera);
 	GameClient()->m_MapLayersForeground.SetCameraOverride(&m_Camera);
 	GameClient()->m_MapLayersBackground.OnRender();
+	GameClient()->m_Items.OnRender();
 	GameClient()->m_Players.RenderForCamera(&m_Camera);
 	GameClient()->m_MapLayersForeground.OnRender();
 	GameClient()->m_MapLayersBackground.SetCameraOverride(nullptr);
