@@ -108,6 +108,37 @@ bool CBee::OnInput(const IInput::CEvent &Event)
 		Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
 		return false;
 
+	if(Event.m_Key == KEY_MOUSE_WHEEL_UP || Event.m_Key == KEY_MOUSE_WHEEL_DOWN)
+	{
+		if(!(Event.m_Flags & IInput::FLAG_PRESS))
+			return false;
+		const vec2 Mouse = MousePosition();
+		if(Mouse.x < g_Config.m_ClBeeX || Mouse.x > g_Config.m_ClBeeX + g_Config.m_ClBeeWidth ||
+			Mouse.y < g_Config.m_ClBeeY || Mouse.y > g_Config.m_ClBeeY + g_Config.m_ClBeeHeight)
+			return false;
+
+		int aActiveIds[MAX_CLIENTS];
+		int NumActive = 0;
+		for(int ClientId = 0; ClientId < MAX_CLIENTS; ++ClientId)
+			if(GameClient()->m_Snap.m_aCharacters[ClientId].m_Active)
+				aActiveIds[NumActive++] = ClientId;
+		if(NumActive == 0)
+		{
+			g_Config.m_ClBeeTarget = -1;
+			return true;
+		}
+
+		const int Direction = Event.m_Key == KEY_MOUSE_WHEEL_UP ? -1 : 1;
+		int Index = -1;
+		for(int i = 0; i < NumActive; ++i)
+			if(aActiveIds[i] == g_Config.m_ClBeeTarget)
+				Index = i;
+		if(Index < 0)
+			Index = Direction > 0 ? -1 : 0;
+		g_Config.m_ClBeeTarget = aActiveIds[(Index + Direction + NumActive) % NumActive];
+		return true;
+	}
+
 	if(Event.m_Key != KEY_MOUSE_1)
 		return false;
 
@@ -139,6 +170,7 @@ bool CBee::OnInput(const IInput::CEvent &Event)
 
 bool CBee::OnCursorMove(float x, float y, IInput::ECursorType CursorType)
 {
+	(void)CursorType;
 	if(!m_Dragging && !m_Resizing)
 		return false;
 
@@ -259,7 +291,13 @@ void CBee::OnRender()
 	CUIRect Header = BeeRect;
 	Header.h = 26.0f;
 	Header.Draw(ColorRGBA(0.025f, 0.03f, 0.045f, 0.94f), IGraphics::CORNER_T, 8.0f);
-	Ui()->DoLabel(&Header, "BEE  |  SECOND CAMERA", 13.0f, TEXTALIGN_ML);
+	char aTitle[128];
+	if(g_Config.m_ClBeeTarget >= 0 && g_Config.m_ClBeeTarget < MAX_CLIENTS &&
+		GameClient()->m_Snap.m_aCharacters[g_Config.m_ClBeeTarget].m_Active)
+		str_format(aTitle, sizeof(aTitle), "BEE  |  %s", GameClient()->m_aClients[g_Config.m_ClBeeTarget].m_aName);
+	else
+		str_copy(aTitle, "BEE  |  ALL PLAYERS");
+	Ui()->DoLabel(&Header, aTitle, 13.0f, TEXTALIGN_ML);
 
 	CUIRect ResizeGrip;
 	ResizeGrip.x = BeeRect.x + BeeRect.w - 14.0f;
