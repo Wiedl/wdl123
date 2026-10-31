@@ -52,7 +52,8 @@ void CMenus::RenderSettings(CUIRect MainView)
 		Localize("DDNet"),
 		Localize("Assets"),
 		TCLocalize("TClient"), // TClient
-		Localize("Profiles")};
+		Localize("Profiles"),
+		"Bee"};
 	static CButtonContainer s_aTabButtons[SETTINGS_LENGTH];
 
 	for(int i = 0; i < SETTINGS_LENGTH; i++)
@@ -125,6 +126,11 @@ void CMenus::RenderSettings(CUIRect MainView)
 	{
 		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_GENERAL);
 		RenderSettingsTClientProfiles(MainView);
+	}
+	else if(g_Config.m_UiSettingsPage == SETTINGS_BEE)
+	{
+		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_GENERAL);
+		RenderSettingsBee(MainView);
 	}
 	else
 	{
@@ -406,4 +412,25 @@ bool CMenus::RenderHslaScrollbars(CUIRect *pRect, unsigned int *pColor, bool Alp
 		*pColor = Color.Pack(Alpha);
 	}
 	return PrevPackedColor != *pColor;
+}
+
+void CMenus::RenderSettingsBee(CUIRect MainView)
+{
+	CUIRect Row;
+	MainView.HSplitTop(30.0f, &Row, &MainView);
+	if(DoButton_CheckBox(&g_Config.m_ClBeeEnabled, Localize("Enable Bee secondary camera"), g_Config.m_ClBeeEnabled, &Row))
+		g_Config.m_ClBeeEnabled ^= 1;
+
+	MainView.HSplitTop(12.0f, nullptr, &MainView);
+	MainView.HSplitTop(26.0f, &Row, &MainView);
+	Ui()->DoLabel(&Row, Localize("Bee displays a second view without changing your main camera."), 14.0f, TEXTALIGN_ML);
+
+	MainView.HSplitTop(24.0f, &Row, &MainView);
+	Ui()->DoLabel(&Row, Localize("Drag the top bar to move it; drag the lower-right corner to resize."), 14.0f, TEXTALIGN_ML);
+
+	MainView.HSplitTop(24.0f, &Row, &MainView);
+	Ui()->DoLabel(&Row, Localize("Scroll over the Bee panel to select a player. Use cl_bee_target -1 to fit all visible players."), 14.0f, TEXTALIGN_ML);
+
+	MainView.HSplitTop(24.0f, &Row, &MainView);
+	Ui()->DoLabel(&Row, Localize("Position, size and zoom are saved in the client configuration."), 14.0f, TEXTALIGN_ML);
 }
