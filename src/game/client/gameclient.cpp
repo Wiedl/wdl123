@@ -133,18 +133,22 @@ bool CBee::OnInput(const IInput::CEvent &Event)
 				aActiveIds[NumActive++] = ClientId;
 		if(NumActive == 0)
 		{
-			g_Config.m_ClBeeTarget = -1;
+			g_Config.m_ClBeeTargetName[0] = 0;
 			return true;
 		}
 
 		const int Direction = Event.m_Key == KEY_MOUSE_WHEEL_UP ? -1 : 1;
 		int Index = -1;
 		for(int i = 0; i < NumActive; ++i)
-			if(aActiveIds[i] == g_Config.m_ClBeeTarget)
+		{
+			const char *pName = GameClient()->m_aClients[aActiveIds[i]].m_aName;
+			if(str_comp_nocase(pName, g_Config.m_ClBeeTargetName) == 0)
 				Index = i;
+		}
 		if(Index < 0)
 			Index = Direction > 0 ? -1 : 0;
-		g_Config.m_ClBeeTarget = aActiveIds[(Index + Direction + NumActive) % NumActive];
+		const int TargetId = aActiveIds[(Index + Direction + NumActive) % NumActive];
+		str_copy(g_Config.m_ClBeeTargetName, GameClient()->m_aClients[TargetId].m_aName, sizeof(g_Config.m_ClBeeTargetName));
 		return true;
 	}
 
@@ -239,7 +243,7 @@ void CBee::OnRender()
 		MaxPos.y = std::max(MaxPos.y, Pos.y);
 		++NumPlayers;
 
-		if(ClientId == g_Config.m_ClBeeTarget)
+		if(g_Config.m_ClBeeTargetName[0] != 0 && str_comp_nocase(GameClient()->m_aClients[ClientId].m_aName, g_Config.m_ClBeeTargetName) == 0)
 		{
 			TargetPos = Pos;
 			TargetFound = true;
@@ -252,7 +256,7 @@ void CBee::OnRender()
 		Center = GameClient()->m_Camera.m_Center;
 
 	float ViewZoom = std::max(1.0f, g_Config.m_ClBeeZoom / 100.0f);
-	if(g_Config.m_ClBeeTarget >= 0 && TargetFound)
+	if(g_Config.m_ClBeeTargetName[0] != 0 && TargetFound)
 	{
 		Center = TargetPos;
 	}
@@ -293,9 +297,10 @@ void CBee::OnRender()
 	Header.h = 26.0f;
 	Header.Draw(ColorRGBA(0.025f, 0.03f, 0.045f, 0.94f), IGraphics::CORNER_T, 8.0f);
 	char aTitle[128];
-	if(g_Config.m_ClBeeTarget >= 0 && g_Config.m_ClBeeTarget < MAX_CLIENTS &&
-		GameClient()->m_Snap.m_aCharacters[g_Config.m_ClBeeTarget].m_Active)
-		str_format(aTitle, sizeof(aTitle), "BEE  |  %s", GameClient()->m_aClients[g_Config.m_ClBeeTarget].m_aName);
+	if(g_Config.m_ClBeeTargetName[0] != 0 && TargetFound)
+		str_format(aTitle, sizeof(aTitle), "BEE  |  %s", g_Config.m_ClBeeTargetName);
+	else if(g_Config.m_ClBeeTargetName[0] != 0)
+		str_format(aTitle, sizeof(aTitle), "BEE  |  %s (not found)", g_Config.m_ClBeeTargetName);
 	else
 		str_copy(aTitle, "BEE  |  ALL PLAYERS");
 	Ui()->DoLabel(&Header, aTitle, 13.0f, TEXTALIGN_ML);
