@@ -198,8 +198,6 @@ void CBee::OnRender()
 		return;
 
 	const CScreenRect MainScreen = Graphics()->GetScreen();
-	Ui()->MapScreen();
-	BeeRect.Draw(ColorRGBA(0.015f, 0.02f, 0.03f, 0.88f), IGraphics::CORNER_ALL, 8.0f);
 
 	vec2 Center = GameClient()->m_Camera.m_Center;
 	vec2 TargetPos(0.0f, 0.0f);
@@ -231,11 +229,10 @@ void CBee::OnRender()
 	
 
 	// Clip the normal framebuffer to the movable Bee panel. The game camera itself is never modified.
-	constexpr float PanelInset = 3.0f;
-	const int ClipX = (int)std::round((BeeRect.x + PanelInset) * Graphics()->ScreenWidth() / pScreen->w);
-	const int ClipY = (int)std::round((BeeRect.y + PanelInset) * Graphics()->ScreenHeight() / pScreen->h);
-	const int ClipW = (int)std::round((BeeRect.w - 2.0f * PanelInset) * Graphics()->ScreenWidth() / pScreen->w);
-	const int ClipH = (int)std::round((BeeRect.h - 2.0f * PanelInset) * Graphics()->ScreenHeight() / pScreen->h);
+	const int ClipX = (int)std::round(BeeRect.x * Graphics()->ScreenWidth() / pScreen->w);
+	const int ClipY = (int)std::round(BeeRect.y * Graphics()->ScreenHeight() / pScreen->h);
+	const int ClipW = (int)std::round(BeeRect.w * Graphics()->ScreenWidth() / pScreen->w);
+	const int ClipH = (int)std::round(BeeRect.h * Graphics()->ScreenHeight() / pScreen->h);
 	auto EnableBeeClip = [&]() { Graphics()->ClipEnable(ClipX, ClipY, ClipW, ClipH); };
 
 	// Map the Bee panel to its own world rectangle. Mapping the whole screen
@@ -267,26 +264,7 @@ void CBee::OnRender()
 	Graphics()->ClipDisable();
 	Graphics()->MapScreen(MainScreen);
 
-	// Draw the panel chrome after the world so it remains legible and draggable.
-	Ui()->MapScreen();
-	CUIRect Header = BeeRect;
-	Header.h = 26.0f;
-	Header.Draw(color_cast<ColorRGBA>(ColorHSLA(g_Config.m_UiColor, true)).WithAlpha(0.96f), IGraphics::CORNER_T, 8.0f);
-	char aTitle[128];
-	if(g_Config.m_ClBeeTargetName[0] != 0 && TargetFound)
-		str_format(aTitle, sizeof(aTitle), "BEE  |  %s", g_Config.m_ClBeeTargetName);
-	else if(g_Config.m_ClBeeTargetName[0] != 0)
-		str_format(aTitle, sizeof(aTitle), "BEE  |  %s (not found)", g_Config.m_ClBeeTargetName);
-	else
-		str_copy(aTitle, "BEE  |  ALL PLAYERS");
-	Ui()->DoLabel(&Header, aTitle, 13.0f, TEXTALIGN_ML);
 
-	CUIRect ResizeGrip;
-	ResizeGrip.x = BeeRect.x + BeeRect.w - 14.0f;
-	ResizeGrip.y = BeeRect.y + BeeRect.h - 14.0f;
-	ResizeGrip.w = 10.0f;
-	ResizeGrip.h = 10.0f;
-	ResizeGrip.Draw(ColorRGBA(0.75f, 0.8f, 0.9f, 0.8f), IGraphics::CORNER_ALL, 2.0f);
 }
 
 const char *CGameClient::Version() const { return GAME_VERSION; }
@@ -2593,6 +2571,9 @@ void CGameClient::OnNewSnapshot(bool DummySwapped)
 	if(DummySwapped)
 		m_Camera.UpdateCamera();
 
+	// Bee asks the server for a wider snapshot independently of the user's
+	// actual camera zoom. CameraInfo below continues to use the unscaled zoom.
+	const float BeeNetworkMultiplier = g_Config.m_ClBeeEnabled ? std::clamp(g_Config.m_ClBeeNetworkDistance / 100.0f, 1.0f, 3.0f) : 1.0f;
 	float ShowDistanceZoom = m_Camera.m_Zoom;
 	float Zoom = m_Camera.m_Zoom;
 	if(m_Camera.m_Zooming)
@@ -2600,10 +2581,11 @@ void CGameClient::OnNewSnapshot(bool DummySwapped)
 		if(m_Camera.m_ZoomSmoothingTarget > m_Camera.m_Zoom) // Zooming out
 			ShowDistanceZoom = m_Camera.m_ZoomSmoothingTarget;
 		else if(m_Camera.m_ZoomSmoothingTarget < m_Camera.m_Zoom && m_LastShowDistanceZoom > 0) // Zooming in
-			ShowDistanceZoom = m_LastShowDistanceZoom;
+			ShowDistanceZoom = m_LastShowDistanceZoom / BeeNetworkMultiplier;
 
 		Zoom = m_Camera.m_ZoomSmoothingTarget;
 	}
+	ShowDistanceZoom *= BeeNetworkMultiplier;
 
 	float Deadzone = m_Camera.Deadzone();
 	float FollowFactor = m_Camera.FollowFactor();
