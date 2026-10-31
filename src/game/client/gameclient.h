@@ -29,6 +29,7 @@
 
 // components
 #include "components/background.h"
+#include "components/bee.h"
 #include "components/binds.h"
 #include "components/broadcast.h"
 #include "components/camera.h"
@@ -184,6 +185,7 @@ public:
 	CKeyBinder m_KeyBinder;
 	CParticles m_Particles;
 	CMenus m_Menus;
+	CBee m_Bee;
 	CSkins m_Skins;
 	CSkins7 m_Skins7;
 	CCountryFlags m_CountryFlags;
