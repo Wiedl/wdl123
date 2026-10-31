@@ -2,6 +2,8 @@
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include "menus.h"
 
+#include <algorithm>
+
 #include <base/dbg.h>
 #include <base/math.h>
 #include <base/str.h>
@@ -446,7 +448,7 @@ void CMenus::RenderSettingsBee(CUIRect MainView)
 
 	char aTargetLabel[128];
 	if(g_Config.m_ClBeeTargetName[0] == '\0')
-		str_copy(aTargetLabel, Localize("All active players"), sizeof(aTargetLabel));
+		str_copy(aTargetLabel, Localize("Camera center / all players"), sizeof(aTargetLabel));
 	else
 		str_format(aTargetLabel, sizeof(aTargetLabel), "%s", g_Config.m_ClBeeTargetName);
 	static CButtonContainer s_BeeTargetButton;
