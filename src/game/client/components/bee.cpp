@@ -1,6 +1,8 @@
 /* (c) Tater contributors. */
 #include "bee.h"
 
+#include <base/math.h>
+
 #include <engine/graphics.h>
 #include <engine/keys.h>
 #include <engine/shared/config.h>
