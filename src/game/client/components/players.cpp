@@ -442,7 +442,7 @@ void CPlayers::RenderHookCollLine(
 		vLineQuadSegments.reserve(vLineSegments.size());
 
 		float LineWidth = 0.5f + (float)(HookCollSize - 1) * 0.25f;
-		const vec2 PerpToAngle = normalize(vec2(Direction.y, -Direction.x)) * GameClient()->m_Camera.m_Zoom;
+		const vec2 PerpToAngle = normalize(vec2(Direction.y, -Direction.x)) * (m_pCameraOverride ? m_pCameraOverride->m_Zoom : GameClient()->m_Camera.m_Zoom);
 
 		auto ConvertLineSegments = [&](const IGraphics::CLineItem &LineSegment) {
 			vec2 DrawInitPos(LineSegment.m_X0, LineSegment.m_Y0);
@@ -1125,8 +1125,17 @@ inline bool CPlayers::IsPlayerInfoAvailable(int ClientId) const
 
 void CPlayers::OnRender()
 {
+	RenderForCamera(nullptr);
+}
+
+void CPlayers::RenderForCamera(const CCamera *pCamera)
+{
+	m_pCameraOverride = pCamera;
 	if(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
+	{
+		m_pCameraOverride = nullptr;
 		return;
+	}
 
 	// update render info for ninja
 	CTeeRenderInfo aRenderInfo[MAX_CLIENTS];
@@ -1271,6 +1280,7 @@ void CPlayers::OnRender()
 		RenderHookCollLine(ScreenRect, &pClientData->m_RenderPrev, &pClientData->m_RenderCur, RenderLastId);
 		RenderPlayer(ScreenRect, &pClientData->m_RenderPrev, &pClientData->m_RenderCur, &aRenderInfo[RenderLastId], RenderLastId);
 	}
+	m_pCameraOverride = nullptr;
 }
 
 void CPlayers::CreateNinjaTeeRenderInfo()
