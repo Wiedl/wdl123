@@ -467,7 +467,7 @@ void CMenus::RenderSettingsBee(CUIRect MainView)
 	Ui()->DoLabel(&Row, Localize("Use the mouse wheel over Bee to zoom its view. The main camera FOV stays unchanged."), 14.0f, TEXTALIGN_ML);
 
 	MainView.HSplitTop(24.0f, &Row, &MainView);
-	Ui()->DoLabel(&Row, Localize("Drag the top bar to move Bee; drag its lower-right corner to resize it."), 14.0f, TEXTALIGN_ML);
+	Ui()->DoLabel(&Row, Localize("Drag the invisible top edge to move Bee; drag the invisible lower-right corner to resize it."), 14.0f, TEXTALIGN_ML);
 
 	MainView.HSplitTop(30.0f, &Row, &MainView);
 	CUIRect DistanceLabel, DistanceMinus, DistanceValue, DistancePlus;
