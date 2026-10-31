@@ -1085,6 +1085,99 @@ void CCommandProcessorFragment_OpenGL::Cmd_Screenshot(const CCommandBuffer::SCom
 	}
 }
 
+
+void CCommandProcessorFragment_OpenGL::Cmd_RenderTarget_Create(const CCommandBuffer::SCommand_RenderTarget_Create *pCommand)
+{
+	*pCommand->m_pSuccess = false;
+#if !defined(BACKEND_AS_OPENGL_ES) || defined(CONF_BACKEND_OPENGL_ES3)
+#ifndef BACKEND_AS_OPENGL_ES
+	if(!GLEW_ARB_framebuffer_object)
+		return;
+#endif
+	const int Slot = pCommand->m_Slot;
+	if(m_RenderTargetActive || Slot < 0 || Slot >= (int)m_vTextures.size() ||
+		Slot >= (int)m_vRenderTargetFramebuffers.size() || m_vTextures[Slot].m_Tex == 0 ||
+		pCommand->m_Width <= 0 || pCommand->m_Height <= 0)
+		return;
+
+	GLint PreviousFramebuffer = 0;
+	GLint PreviousTexture = 0;
+	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &PreviousFramebuffer);
+	glGetIntegerv(GL_TEXTURE_BINDING_2D, &PreviousTexture);
+
+	TWGLuint Framebuffer = 0;
+	glGenFramebuffers(1, &Framebuffer);
+	if(Framebuffer == 0)
+		return;
+
+	glBindFramebuffer(GL_FRAMEBUFFER, Framebuffer);
+	glBindTexture(GL_TEXTURE_2D, m_vTextures[Slot].m_Tex);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_vTextures[Slot].m_Tex, 0);
+	const bool Complete = glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+	glBindTexture(GL_TEXTURE_2D, PreviousTexture);
+	glBindFramebuffer(GL_FRAMEBUFFER, PreviousFramebuffer);
+
+	if(!Complete)
+	{
+		glDeleteFramebuffers(1, &Framebuffer);
+		return;
+	}
+
+	if(m_vRenderTargetFramebuffers[Slot] != 0)
+		glDeleteFramebuffers(1, &m_vRenderTargetFramebuffers[Slot]);
+	m_vRenderTargetFramebuffers[Slot] = Framebuffer;
+	*pCommand->m_pSuccess = true;
+#endif
+}
+
+void CCommandProcessorFragment_OpenGL::Cmd_RenderTarget_Begin(const CCommandBuffer::SCommand_RenderTarget_Begin *pCommand)
+{
+#if !defined(BACKEND_AS_OPENGL_ES) || defined(CONF_BACKEND_OPENGL_ES3)
+	const int Slot = pCommand->m_Slot;
+	if(m_RenderTargetActive || Slot < 0 || Slot >= (int)m_vRenderTargetFramebuffers.size() ||
+		m_vRenderTargetFramebuffers[Slot] == 0 || pCommand->m_Width <= 0 || pCommand->m_Height <= 0)
+		return;
+
+	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &m_SavedFramebuffer);
+	glGetIntegerv(GL_VIEWPORT, m_aSavedViewport);
+	glGetIntegerv(GL_SCISSOR_BOX, m_aSavedScissor);
+	m_SavedScissorEnabled = glIsEnabled(GL_SCISSOR_TEST);
+	m_SavedViewportX = m_ViewportX;
+	m_SavedViewportY = m_ViewportY;
+	m_SavedLastClipEnable = m_LastClipEnable;
+
+	glBindFramebuffer(GL_FRAMEBUFFER, m_vRenderTargetFramebuffers[Slot]);
+	glViewport(0, 0, pCommand->m_Width, pCommand->m_Height);
+	glDisable(GL_SCISSOR_TEST);
+	m_ViewportX = 0;
+	m_ViewportY = 0;
+	m_LastClipEnable = false;
+	m_RenderTargetActive = true;
+#endif
+}
+
+void CCommandProcessorFragment_OpenGL::Cmd_RenderTarget_End(const CCommandBuffer::SCommand_RenderTarget_End *pCommand)
+{
+	(void)pCommand;
+#if !defined(BACKEND_AS_OPENGL_ES) || defined(CONF_BACKEND_OPENGL_ES3)
+	if(!m_RenderTargetActive)
+		return;
+
+	glBindFramebuffer(GL_FRAMEBUFFER, m_SavedFramebuffer);
+	glViewport(m_aSavedViewport[0], m_aSavedViewport[1], m_aSavedViewport[2], m_aSavedViewport[3]);
+	glScissor(m_aSavedScissor[0], m_aSavedScissor[1], m_aSavedScissor[2], m_aSavedScissor[3]);
+	if(m_SavedScissorEnabled)
+		glEnable(GL_SCISSOR_TEST);
+	else
+		glDisable(GL_SCISSOR_TEST);
+
+	m_ViewportX = m_SavedViewportX;
+	m_ViewportY = m_SavedViewportY;
+	m_LastClipEnable = m_SavedLastClipEnable;
+	m_RenderTargetActive = false;
+#endif
+}
+
 CCommandProcessorFragment_OpenGL::CCommandProcessorFragment_OpenGL()
 {
 	m_vTextures.resize(CCommandBuffer::MAX_TEXTURES);
