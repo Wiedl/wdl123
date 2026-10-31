@@ -740,9 +740,6 @@ void CGameClient::OnReset()
 	m_LastFollowFactor = 0.0f;
 	m_LastDummyConnected = false;
 
-	m_MultiViewPersonalZoom = 0.0f;
-	m_MultiViewActivated = false;
-	m_MultiView.m_IsInit = false;
 
 	m_CursorInfo.m_CursorOwnerId = -1;
 	m_CursorInfo.m_NumSamples = 0;
@@ -770,11 +767,7 @@ void CGameClient::UpdatePositions()
 	// spectator position
 	if(m_Snap.m_SpecInfo.m_Active)
 	{
-		if(m_MultiViewActivated)
-		{
-			HandleMultiView();
-		}
-		else if(Client()->State() == IClient::STATE_DEMOPLAYBACK && m_DemoSpecId != SPEC_FOLLOW && m_Snap.m_SpecInfo.m_SpectatorId != SPEC_FREEVIEW)
+		if(Client()->State() == IClient::STATE_DEMOPLAYBACK && m_DemoSpecId != SPEC_FOLLOW && m_Snap.m_SpecInfo.m_SpectatorId != SPEC_FREEVIEW)
 		{
 			m_Snap.m_SpecInfo.m_Position = mix(
 				vec2(m_Snap.m_aCharacters[m_Snap.m_SpecInfo.m_SpectatorId].m_Prev.m_X, m_Snap.m_aCharacters[m_Snap.m_SpecInfo.m_SpectatorId].m_Prev.m_Y),
@@ -793,8 +786,6 @@ void CGameClient::UpdatePositions()
 		}
 	}
 
-	if(!m_MultiViewActivated && m_MultiView.m_IsInit)
-		ResetMultiView();
 
 	UpdateRenderedCharacters();
 }
@@ -803,22 +794,6 @@ void CGameClient::OnRender()
 {
 	const ColorRGBA ClearColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClOverlayEntities ? g_Config.m_ClBackgroundEntitiesColor : g_Config.m_ClBackgroundColor));
 	Graphics()->Clear(ClearColor.r, ClearColor.g, ClearColor.b);
-
-	// check if multi view got activated
-	if(!m_MultiView.m_IsInit && m_MultiViewActivated)
-	{
-		int TeamId = 0;
-		if(m_Snap.m_SpecInfo.m_SpectatorId >= 0)
-			TeamId = m_Teams.Team(m_Snap.m_SpecInfo.m_SpectatorId);
-
-		if(TeamId > MAX_CLIENTS || TeamId < 0)
-			TeamId = 0;
-
-		if(!InitMultiView(TeamId))
-		{
-			ResetMultiView();
-		}
-	}
 
 	// update the local character and spectate position
 	UpdatePositions();
@@ -1246,32 +1221,6 @@ void CGameClient::OnMessage(int MsgId, CUnpacker *pUnpacker, int Conn, bool Dumm
 			m_GameWorld.ReleaseHooked(pMsg->m_Victim);
 		}
 
-		// if we are spectating a static id set (team 0) and somebody killed, and its not a guy in solo, we remove them from the list
-		// never remove players from the list if it is a pvp server
-		if(IsMultiViewIdSet() && m_MultiViewTeam == 0 && m_aMultiViewId[pMsg->m_Victim] && !m_aClients[pMsg->m_Victim].m_Spec && !m_MultiView.m_Solo && !m_GameInfo.m_Pvp)
-		{
-			m_aMultiViewId[pMsg->m_Victim] = false;
-
-			// if everyone of a team killed, we have no ids to spectate anymore, so we disable multi view
-			if(!IsMultiViewIdSet())
-			{
-				ResetMultiView();
-			}
-			else
-			{
-				// the "main" tee killed, search a new one
-				if(m_Snap.m_SpecInfo.m_SpectatorId == pMsg->m_Victim)
-				{
-					int NewClientId = FindFirstMultiViewId();
-					if(NewClientId < MAX_CLIENTS && NewClientId >= 0)
-					{
-						CleanMultiViewId(NewClientId);
-						m_aMultiViewId[NewClientId] = true;
-						m_Spectator.Spectate(NewClientId);
-					}
-				}
-			}
-		}
 	}
 	else if(MsgId == NETMSGTYPE_SV_KILLMSGTEAM)
 	{
@@ -2350,17 +2299,7 @@ void CGameClient::OnNewSnapshot(bool DummySwapped)
 		m_aDDRaceMsgSent[i] = true;
 	}
 
-	if(m_Snap.m_SpecInfo.m_Active && m_MultiViewActivated)
-	{
-		// dont show other teams while spectating in multi view
-		CNetMsg_Cl_ShowOthers Msg;
-		Msg.m_Show = SHOW_OTHERS_ONLY_TEAM;
-		Client()->SendPackMsgActive(&Msg, MSGFLAG_VITAL);
-
-		// update state
-		m_aShowOthers[g_Config.m_ClDummy] = SHOW_OTHERS_ONLY_TEAM;
-	}
-	else if(m_aShowOthers[g_Config.m_ClDummy] == SHOW_OTHERS_NOT_SET || m_aShowOthers[g_Config.m_ClDummy] != g_Config.m_ClShowOthers)
+	if(m_aShowOthers[g_Config.m_ClDummy] == SHOW_OTHERS_NOT_SET || m_aShowOthers[g_Config.m_ClDummy] != g_Config.m_ClShowOthers)
 	{
 		{
 			CNetMsg_Cl_ShowOthers Msg;
@@ -4086,9 +4025,8 @@ void CGameClient::UpdateSpectatorCursor()
 		m_CursorInfo.m_CursorOwnerId = CursorOwnerId;
 	}
 
-	if(m_MultiViewActivated || CursorOwnerId < 0 || CursorOwnerId >= MAX_CLIENTS)
+	if(CursorOwnerId < 0 || CursorOwnerId >= MAX_CLIENTS)
 	{
-		// do not show spec cursor in multi-view
 		m_CursorInfo.m_Available = false;
 		m_CursorInfo.m_NumSamples = 0;
 		return;
