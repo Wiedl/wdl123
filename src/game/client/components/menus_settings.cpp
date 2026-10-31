@@ -423,14 +423,50 @@ void CMenus::RenderSettingsBee(CUIRect MainView)
 
 	MainView.HSplitTop(12.0f, nullptr, &MainView);
 	MainView.HSplitTop(26.0f, &Row, &MainView);
-	Ui()->DoLabel(&Row, Localize("Bee displays a second view without changing your main camera."), 14.0f, TEXTALIGN_ML);
+	Ui()->DoLabel(&Row, Localize("Bee follows a player in an independent view; your main camera is not changed."), 14.0f, TEXTALIGN_ML);
+
+	MainView.HSplitTop(30.0f, &Row, &MainView);
+	CUIRect TargetLabel, TargetButton;
+	Row.VSplitLeft(115.0f, &TargetLabel, &TargetButton);
+	Ui()->DoLabel(&TargetLabel, Localize("Follow player:"), 14.0f, TEXTALIGN_ML);
+
+	int aActiveIds[MAX_CLIENTS];
+	int NumActive = 0;
+	int CurrentIndex = -1;
+	for(int ClientId = 0; ClientId < MAX_CLIENTS; ++ClientId)
+	{
+		if(!GameClient()->m_Snap.m_aCharacters[ClientId].m_Active)
+			continue;
+		aActiveIds[NumActive] = ClientId;
+		if(g_Config.m_ClBeeTargetName[0] != '\0' &&
+			str_comp_nocase(GameClient()->m_aClients[ClientId].m_aName, g_Config.m_ClBeeTargetName) == 0)
+			CurrentIndex = NumActive;
+		++NumActive;
+	}
+
+	char aTargetLabel[128];
+	if(g_Config.m_ClBeeTargetName[0] == '\0')
+		str_copy(aTargetLabel, Localize("All active players"), sizeof(aTargetLabel));
+	else
+		str_format(aTargetLabel, sizeof(aTargetLabel), "%s", g_Config.m_ClBeeTargetName);
+	static CButtonContainer s_BeeTargetButton;
+	if(DoButton_Menu(&s_BeeTargetButton, aTargetLabel, 0, &TargetButton))
+	{
+		if(NumActive == 0 || (CurrentIndex >= 0 && CurrentIndex + 1 >= NumActive))
+			g_Config.m_ClBeeTargetName[0] = '\0';
+		else
+		{
+			const int NextIndex = CurrentIndex < 0 ? 0 : CurrentIndex + 1;
+			str_copy(g_Config.m_ClBeeTargetName, GameClient()->m_aClients[aActiveIds[NextIndex]].m_aName, sizeof(g_Config.m_ClBeeTargetName));
+		}
+	}
 
 	MainView.HSplitTop(24.0f, &Row, &MainView);
-	Ui()->DoLabel(&Row, Localize("Drag the top bar to move it; drag the lower-right corner to resize."), 14.0f, TEXTALIGN_ML);
+	Ui()->DoLabel(&Row, Localize("Use the mouse wheel over Bee to zoom its camera in or out."), 14.0f, TEXTALIGN_ML);
 
 	MainView.HSplitTop(24.0f, &Row, &MainView);
-	Ui()->DoLabel(&Row, Localize("Set cl_bee_target_name to a player nickname; leave it empty to fit all visible players. Scroll over Bee to cycle player names."), 14.0f, TEXTALIGN_ML);
+	Ui()->DoLabel(&Row, Localize("Drag the top bar to move Bee; drag its lower-right corner to resize it."), 14.0f, TEXTALIGN_ML);
 
 	MainView.HSplitTop(24.0f, &Row, &MainView);
-	Ui()->DoLabel(&Row, Localize("Position, size and zoom are saved in the client configuration."), 14.0f, TEXTALIGN_ML);
+	Ui()->DoLabel(&Row, Localize("Bee position, size, target player and zoom are saved in the client configuration."), 14.0f, TEXTALIGN_ML);
 }
