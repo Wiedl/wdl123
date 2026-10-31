@@ -366,8 +366,7 @@ void CCamera::OnRender()
 		(SpecId != m_PrevSpecId ||
 			(m_CameraSmoothing && m_CameraSmoothingTarget != m_Center)) && // the target is moving during camera smoothing
 		!(!m_WasSpectating && m_Center != m_PrevCenter) && // dont smooth when starting to spectate
-		m_CamType != CAMTYPE_SPEC &&
-		)
+		m_CamType != CAMTYPE_SPEC)
 	{
 		float Now = Client()->LocalTime();
 		if(!m_CameraSmoothing)
