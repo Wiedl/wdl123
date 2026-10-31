@@ -212,7 +212,6 @@ public:
 	CMapLayers m_MapLayersBackground = CMapLayers{ERenderType::RENDERTYPE_BACKGROUND};
 	CMapLayers m_MapLayersForeground = CMapLayers{ERenderType::RENDERTYPE_FOREGROUND};
 	CBackground m_Background;
-	CBee m_Bee;
 	CMenuBackground m_MenuBackground;
 
 	CMapSounds m_MapSounds;
