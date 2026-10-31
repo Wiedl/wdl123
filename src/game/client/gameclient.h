@@ -29,6 +29,7 @@
 
 // components
 #include "components/background.h"
+#include "components/bee.h"
 #include "components/binds.h"
 #include "components/broadcast.h"
 #include "components/camera.h"
@@ -204,6 +205,7 @@ public:
 	CSpectator m_Spectator;
 
 	CPlayers m_Players;
+	CBee m_Bee;
 	CNamePlates m_NamePlates;
 	CFreezeBars m_FreezeBars;
 	CItems m_Items;
