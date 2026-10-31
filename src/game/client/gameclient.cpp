@@ -232,7 +232,7 @@ void CBee::OnRender()
 	}
 
 	if(NumPlayers > 0)
-		Center = (MinPos + MaxPos) * 0.5f;
+		Center = GameClient()->m_Camera.m_Center;
 	else
 		Center = GameClient()->m_Camera.m_Center;
 
@@ -242,15 +242,7 @@ void CBee::OnRender()
 	{
 		Center = TargetPos;
 	}
-	else if(NumPlayers > 0)
-	{
-		// Fit all active players into the Bee viewport without changing the
-		// user's zoom preference or the primary camera.
-		float BaseWidth, BaseHeight;
-		Graphics()->CalcScreenParams(BeeAspect, 1.0f, &BaseWidth, &BaseHeight);
-		const float NeededZoom = std::max((MaxPos.y - MinPos.y) / BaseHeight, (MaxPos.x - MinPos.x) / BaseWidth) * 1.2f;
-		ViewZoom = std::max(ViewZoom, NeededZoom);
-	}
+	
 
 	// Clip the normal framebuffer to the movable Bee panel. The game camera itself is never modified.
 	constexpr float PanelInset = 3.0f;
@@ -279,19 +271,10 @@ void CBee::OnRender()
 	else
 		GameClient()->m_Background.OnRenderBee(Center, ViewZoom);
 	EnableBeeClip();
-	GameClient()->m_Particles.RenderBeeBackground();
-	EnableBeeClip();
-	GameClient()->m_Items.OnRender();
-	EnableBeeClip();
-	GameClient()->m_Players.RenderBee();
-	EnableBeeClip();
-	GameClient()->m_MapLayersForeground.OnRenderBee(Center, ViewZoom);
-	EnableBeeClip();
-	GameClient()->m_Particles.RenderBeeForeground();
-	EnableBeeClip();
-	GameClient()->m_NamePlates.OnRender();
-	EnableBeeClip();
-	GameClient()->m_FreezeBars.OnRender();
+	// Bee deliberately renders only map geometry and cached player tees.
+	// Dynamic game components are not invoked a second time here: several of
+	// them mutate frame state or emit effects during their normal render pass.
+	GameClient()->m_Players.RenderBee(Center, (float)g_Config.m_ClBeePlayerDistance);
 
 	Graphics()->ClipDisable();
 	Graphics()->MapScreen(MainScreen);
