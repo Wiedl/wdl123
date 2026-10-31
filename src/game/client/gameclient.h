@@ -29,7 +29,6 @@
 
 // components
 #include "components/background.h"
-#include "components/bee.h"
 #include "components/binds.h"
 #include "components/broadcast.h"
 #include "components/camera.h"
