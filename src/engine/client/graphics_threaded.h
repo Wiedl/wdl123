@@ -163,6 +163,9 @@ public:
 		CMD_TRY_SWAP_AND_READ_PIXEL,
 		CMD_TRY_SWAP_AND_SCREENSHOT,
 		CMD_UPDATE_VIEWPORT,
+		CMD_RENDER_TARGET_CREATE,
+		CMD_RENDER_TARGET_BEGIN,
+		CMD_RENDER_TARGET_END,
 
 		// in Android a window that minimizes gets destroyed
 		CMD_WINDOW_CREATE_NTF,
@@ -507,6 +510,28 @@ public:
 		int m_DrawableWidth;
 		int m_DrawableHeight;
 		bool m_ByResize; // resized by an resize event.. a hint to make clear that the viewport update can be deferred if wanted
+	};
+
+	struct SCommand_RenderTarget_Create : public SCommand
+	{
+		SCommand_RenderTarget_Create() : SCommand(CMD_RENDER_TARGET_CREATE) {}
+		int m_Slot;
+		int m_Width;
+		int m_Height;
+		bool *m_pSuccess;
+	};
+
+	struct SCommand_RenderTarget_Begin : public SCommand
+	{
+		SCommand_RenderTarget_Begin() : SCommand(CMD_RENDER_TARGET_BEGIN) {}
+		int m_Slot;
+		int m_Width;
+		int m_Height;
+	};
+
+	struct SCommand_RenderTarget_End : public SCommand
+	{
+		SCommand_RenderTarget_End() : SCommand(CMD_RENDER_TARGET_END) {}
 	};
 
 	struct SCommand_Texture_Create : public SCommand
@@ -961,6 +986,10 @@ public:
 	void TextureSet(CTextureHandle TextureId) override;
 
 	void Clear(float r, float g, float b, bool ForceClearNow = false) override;
+	IGraphics::CTextureHandle CreateRenderTarget(int Width, int Height) override;
+	void BeginRenderTarget(IGraphics::CTextureHandle Target, int Width, int Height) override;
+	void EndRenderTarget() override;
+	void DestroyRenderTarget(IGraphics::CTextureHandle *pTarget) override;
 
 	void QuadsBegin() override;
 	void QuadsEnd() override;
