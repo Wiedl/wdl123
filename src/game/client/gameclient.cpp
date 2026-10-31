@@ -236,6 +236,7 @@ void CBee::OnRender()
 	else
 		Center = GameClient()->m_Camera.m_Center;
 
+	const float BeeAspect = BeeRect.w / BeeRect.h;
 	float ViewZoom = std::clamp(g_Config.m_ClBeeZoom / 100.0f, 1.0f, 20.0f);
 	if(g_Config.m_ClBeeTargetName[0] != 0 && TargetFound)
 	{
@@ -245,9 +246,10 @@ void CBee::OnRender()
 	{
 		// Fit all active players into the Bee viewport without changing the
 		// user's zoom preference or the primary camera.
-		const float Aspect = BeeRect.w / BeeRect.h;
-		const float NeededHeight = std::max(MaxPos.y - MinPos.y, (MaxPos.x - MinPos.x) / Aspect) * 1.2f;
-		ViewZoom = std::max(ViewZoom, NeededHeight / 300.0f);
+		float BaseWidth, BaseHeight;
+		Graphics()->CalcScreenParams(BeeAspect, 1.0f, &BaseWidth, &BaseHeight);
+		const float NeededHeight = std::max(MaxPos.y - MinPos.y, (MaxPos.x - MinPos.x) / BeeAspect) * 1.2f;
+		ViewZoom = std::max(ViewZoom, NeededHeight / BaseHeight);
 	}
 
 	// Clip the normal framebuffer to the movable Bee panel. The game camera itself is never modified.
@@ -262,7 +264,8 @@ void CBee::OnRender()
 	// directly to the Bee camera and then clipping a corner makes the panel
 	// show an offset part of the world. Compensate for the panel's position
 	// and aspect ratio so its center always corresponds to Center.
-	const float BeeWorldHeight = 300.0f * ViewZoom;
+	float BeeWorldWidth, BeeWorldHeight;
+	Graphics()->CalcScreenParams(BeeAspect, ViewZoom, &BeeWorldWidth, &BeeWorldHeight);
 	const float FullWorldHeight = BeeWorldHeight * pScreen->h / BeeRect.h;
 	const float FullWorldWidth = FullWorldHeight * pScreen->w / pScreen->h;
 	const float PanelCenterX = (BeeRect.x + BeeRect.w * 0.5f) / pScreen->w;
