@@ -1123,6 +1123,36 @@ inline bool CPlayers::IsPlayerInfoAvailable(int ClientId) const
 	       GameClient()->m_Snap.m_apPlayerInfos[ClientId] != nullptr;
 }
 
+void CPlayers::RenderBee(vec2 Center, float MaxDistance)
+{
+	if(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
+		return;
+
+	// Bee must not run the full player renderer a second time: that pass also
+	// updates flow, effects, volleyball state, hooks and other frame state.
+	// Draw only the visible tees using the already prepared render information.
+	CScreenRect ScreenRect = Graphics()->GetScreen();
+	ScreenRect.Expand(100.0f);
+
+	for(int ClientId = 0; ClientId < MAX_CLIENTS; ++ClientId)
+	{
+		if(!IsPlayerInfoAvailable(ClientId))
+			continue;
+
+		const auto &ClientData = GameClient()->m_aClients[ClientId];
+		const vec2 Position = ClientData.m_RenderPos;
+		if(length(Position - Center) > MaxDistance || !ScreenRect.Inside(Position))
+			continue;
+
+		CTeeRenderInfo RenderInfo = ClientData.m_RenderInfo;
+		RenderInfo.m_Size = 64.0f;
+		const float Alpha = GameClient()->IsOtherTeam(ClientId) ? g_Config.m_ClShowOthersAlpha / 100.0f : 1.0f;
+		const float Intra = ClientData.m_IsPredicted ? Client()->PredIntraGameTick(g_Config.m_ClDummy) : Client()->IntraGameTick(g_Config.m_ClDummy);
+		const float Angle = GetPlayerTargetAngle(&ClientData.m_RenderPrev, &ClientData.m_RenderCur, ClientId, Intra);
+		RenderTools()->RenderTee(CAnimState::GetIdle(), &RenderInfo, ClientData.m_RenderCur.m_Emote, direction(Angle), Position, Alpha);
+	}
+}
+
 void CPlayers::OnRender()
 {
 	if(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)

@@ -132,7 +132,9 @@ MACRO_CONFIG_INT(ClBeeY, cl_bee_y, 40, 0, 2000, CFGFLAG_CLIENT | CFGFLAG_SAVE, "
 MACRO_CONFIG_INT(ClBeeWidth, cl_bee_width, 360, 160, 1200, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Bee overlay width in interface units")
 MACRO_CONFIG_INT(ClBeeHeight, cl_bee_height, 220, 100, 800, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Bee overlay height in interface units")
 MACRO_CONFIG_INT(ClBeeZoom, cl_bee_zoom, 250, 100, 2000, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Bee camera zoom-out factor in percent")
-MACRO_CONFIG_STR(ClBeeTargetName, cl_bee_target_name, 64, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "Bee camera target player nickname; empty fits all visible players")
+MACRO_CONFIG_INT(ClBeePlayerDistance, cl_bee_player_distance, 2500, 100, 20000, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Maximum distance for players shown in Bee")
+MACRO_CONFIG_INT(ClBeeNetworkDistance, cl_bee_network_distance, 250, 100, 300, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Bee network visibility distance as a percentage of the normal view")
+MACRO_CONFIG_STR(ClBeeTargetName, cl_bee_target_name, 64, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "Bee camera target player nickname; empty follows main camera center")
 
 MACRO_CONFIG_INT(ClSpectatorMouseclicks, cl_spectator_mouseclicks, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enables left-click to toggle between spectating the closest player and free-view")
 MACRO_CONFIG_INT(ClSmoothSpectatingTime, cl_smooth_spectating_time, 300, 0, 5000, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Time of smooth camera switch animation when spectating in ms (0 for off)")

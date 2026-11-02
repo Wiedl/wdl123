@@ -85,6 +85,19 @@ public:
 	void OnRender() override;
 	void OnInit() override;
 
+	// Render the existing particle groups in Bee's independently mapped view.
+	void RenderBeeBackground()
+	{
+		RenderGroup(GROUP_PROJECTILE_TRAIL);
+		RenderGroup(GROUP_TRAIL_EXTRA);
+	}
+	void RenderBeeForeground()
+	{
+		RenderGroup(GROUP_EXPLOSIONS);
+		RenderGroup(GROUP_EXTRA);
+		RenderGroup(GROUP_GENERAL);
+	}
+
 private:
 	int m_ParticleQuadContainerIndex;
 	int m_ExtraParticleQuadContainerIndex;

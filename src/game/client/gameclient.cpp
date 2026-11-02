@@ -126,29 +126,10 @@ bool CBee::OnInput(const IInput::CEvent &Event)
 			Mouse.y < g_Config.m_ClBeeY || Mouse.y > g_Config.m_ClBeeY + g_Config.m_ClBeeHeight)
 			return false;
 
-		int aActiveIds[MAX_CLIENTS];
-		int NumActive = 0;
-		for(int ClientId = 0; ClientId < MAX_CLIENTS; ++ClientId)
-			if(GameClient()->m_Snap.m_aCharacters[ClientId].m_Active)
-				aActiveIds[NumActive++] = ClientId;
-		if(NumActive == 0)
-		{
-			g_Config.m_ClBeeTargetName[0] = 0;
-			return true;
-		}
-
-		const int Direction = Event.m_Key == KEY_MOUSE_WHEEL_UP ? -1 : 1;
-		int Index = -1;
-		for(int i = 0; i < NumActive; ++i)
-		{
-			const char *pName = GameClient()->m_aClients[aActiveIds[i]].m_aName;
-			if(str_comp_nocase(pName, g_Config.m_ClBeeTargetName) == 0)
-				Index = i;
-		}
-		if(Index < 0)
-			Index = Direction > 0 ? -1 : 0;
-		const int TargetId = aActiveIds[(Index + Direction + NumActive) % NumActive];
-		str_copy(g_Config.m_ClBeeTargetName, GameClient()->m_aClients[TargetId].m_aName, sizeof(g_Config.m_ClBeeTargetName));
+		// The Bee wheel controls only the secondary camera zoom. It must never
+		// alter the main camera or the selected player.
+		const float ZoomFactor = Event.m_Key == KEY_MOUSE_WHEEL_UP ? 0.85f : 1.18f;
+		g_Config.m_ClBeeZoom = std::clamp((int)std::round(g_Config.m_ClBeeZoom * ZoomFactor), 100, 2000);
 		return true;
 	}
 
@@ -217,13 +198,8 @@ void CBee::OnRender()
 		return;
 
 	const CScreenRect MainScreen = Graphics()->GetScreen();
-	Ui()->MapScreen();
-	BeeRect.Draw(ColorRGBA(0.015f, 0.02f, 0.03f, 0.88f), IGraphics::CORNER_ALL, 8.0f);
 
-	int NumPlayers = 0;
-	vec2 Center(0.0f, 0.0f);
-	vec2 MinPos(std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
-	vec2 MaxPos(std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest());
+	vec2 Center = GameClient()->m_Camera.m_Center;
 	vec2 TargetPos(0.0f, 0.0f);
 	bool TargetFound = false;
 	const float Intra = Client()->IntraGameTick(g_Config.m_ClDummy);
@@ -237,12 +213,6 @@ void CBee::OnRender()
 		const vec2 Pos = mix(
 			vec2(ClientData.m_RenderPrev.m_X, ClientData.m_RenderPrev.m_Y),
 			vec2(ClientData.m_RenderCur.m_X, ClientData.m_RenderCur.m_Y), Intra);
-		MinPos.x = std::min(MinPos.x, Pos.x);
-		MinPos.y = std::min(MinPos.y, Pos.y);
-		MaxPos.x = std::max(MaxPos.x, Pos.x);
-		MaxPos.y = std::max(MaxPos.y, Pos.y);
-		++NumPlayers;
-
 		if(g_Config.m_ClBeeTargetName[0] != 0 && str_comp_nocase(GameClient()->m_aClients[ClientId].m_aName, g_Config.m_ClBeeTargetName) == 0)
 		{
 			TargetPos = Pos;
@@ -250,67 +220,51 @@ void CBee::OnRender()
 		}
 	}
 
-	if(NumPlayers > 0)
-		Center = (MinPos + MaxPos) * 0.5f;
-	else
-		Center = GameClient()->m_Camera.m_Center;
-
-	float ViewZoom = std::max(1.0f, g_Config.m_ClBeeZoom / 100.0f);
+	const float BeeAspect = BeeRect.w / BeeRect.h;
+	float ViewZoom = std::clamp(g_Config.m_ClBeeZoom / 100.0f, 1.0f, 20.0f);
 	if(g_Config.m_ClBeeTargetName[0] != 0 && TargetFound)
 	{
 		Center = TargetPos;
 	}
-	else if(NumPlayers > 0)
-	{
-		const float Aspect = BeeRect.w / BeeRect.h;
-		const float NeededHeight = std::max(MaxPos.y - MinPos.y, (MaxPos.x - MinPos.x) / Aspect) * 1.2f;
-		const float CurrentHeight = 300.0f * ViewZoom * BeeRect.h / pScreen->h;
-		if(NeededHeight > CurrentHeight)
-			ViewZoom *= NeededHeight / CurrentHeight;
-	}
+	
 
 	// Clip the normal framebuffer to the movable Bee panel. The game camera itself is never modified.
-	constexpr float PanelInset = 3.0f;
-	const int ClipX = (int)std::round((BeeRect.x + PanelInset) * Graphics()->ScreenWidth() / pScreen->w);
-	const int ClipY = (int)std::round((BeeRect.y + PanelInset) * Graphics()->ScreenHeight() / pScreen->h);
-	const int ClipW = (int)std::round((BeeRect.w - 2.0f * PanelInset) * Graphics()->ScreenWidth() / pScreen->w);
-	const int ClipH = (int)std::round((BeeRect.h - 2.0f * PanelInset) * Graphics()->ScreenHeight() / pScreen->h);
+	const int ClipX = (int)std::round(BeeRect.x * Graphics()->ScreenWidth() / pScreen->w);
+	const int ClipY = (int)std::round(BeeRect.y * Graphics()->ScreenHeight() / pScreen->h);
+	const int ClipW = (int)std::round(BeeRect.w * Graphics()->ScreenWidth() / pScreen->w);
+	const int ClipH = (int)std::round(BeeRect.h * Graphics()->ScreenHeight() / pScreen->h);
 	auto EnableBeeClip = [&]() { Graphics()->ClipEnable(ClipX, ClipY, ClipW, ClipH); };
 
-	Graphics()->MapScreenToInterface(Center.x, Center.y, ViewZoom);
+	// Map the Bee panel to its own world rectangle. Mapping the whole screen
+	// directly to the Bee camera and then clipping a corner makes the panel
+	// show an offset part of the world. Compensate for the panel's position
+	// and aspect ratio so its center always corresponds to Center.
+	float BeeWorldWidth, BeeWorldHeight;
+	Graphics()->CalcScreenParams(BeeAspect, ViewZoom, &BeeWorldWidth, &BeeWorldHeight);
+	const float FullWorldHeight = BeeWorldHeight * pScreen->h / BeeRect.h;
+	const float FullWorldWidth = BeeWorldWidth * pScreen->w / BeeRect.w;
+	const float PanelCenterX = (BeeRect.x + BeeRect.w * 0.5f) / pScreen->w;
+	const float PanelCenterY = (BeeRect.y + BeeRect.h * 0.5f) / pScreen->h;
+	const float WorldLeft = Center.x - PanelCenterX * FullWorldWidth;
+	const float WorldTop = Center.y - PanelCenterY * FullWorldHeight;
+	Graphics()->MapScreen(CScreenRect(WorldLeft, WorldTop, FullWorldWidth, FullWorldHeight));
 	EnableBeeClip();
 	if(g_Config.m_ClOverlayEntities != 100)
-	{
 		GameClient()->m_MapLayersBackground.OnRenderBee(Center, ViewZoom);
-		EnableBeeClip();
-	}
+	else
+		GameClient()->m_Background.OnRenderBee(Center, ViewZoom);
+	EnableBeeClip();
 	GameClient()->m_MapLayersForeground.OnRenderBee(Center, ViewZoom);
 	EnableBeeClip();
-	GameClient()->m_Players.RenderBee();
+	// Bee deliberately renders only map geometry and cached player tees.
+	// Dynamic game components are not invoked a second time here: several of
+	// them mutate frame state or emit effects during their normal render pass.
+	GameClient()->m_Players.RenderBee(Center, (float)g_Config.m_ClBeePlayerDistance);
 
 	Graphics()->ClipDisable();
 	Graphics()->MapScreen(MainScreen);
 
-	// Draw the panel chrome after the world so it remains legible and draggable.
-	Ui()->MapScreen();
-	CUIRect Header = BeeRect;
-	Header.h = 26.0f;
-	Header.Draw(ColorRGBA(0.025f, 0.03f, 0.045f, 0.94f), IGraphics::CORNER_T, 8.0f);
-	char aTitle[128];
-	if(g_Config.m_ClBeeTargetName[0] != 0 && TargetFound)
-		str_format(aTitle, sizeof(aTitle), "BEE  |  %s", g_Config.m_ClBeeTargetName);
-	else if(g_Config.m_ClBeeTargetName[0] != 0)
-		str_format(aTitle, sizeof(aTitle), "BEE  |  %s (not found)", g_Config.m_ClBeeTargetName);
-	else
-		str_copy(aTitle, "BEE  |  ALL PLAYERS");
-	Ui()->DoLabel(&Header, aTitle, 13.0f, TEXTALIGN_ML);
 
-	CUIRect ResizeGrip;
-	ResizeGrip.x = BeeRect.x + BeeRect.w - 14.0f;
-	ResizeGrip.y = BeeRect.y + BeeRect.h - 14.0f;
-	ResizeGrip.w = 10.0f;
-	ResizeGrip.h = 10.0f;
-	ResizeGrip.Draw(ColorRGBA(0.75f, 0.8f, 0.9f, 0.8f), IGraphics::CORNER_ALL, 2.0f);
 }
 
 const char *CGameClient::Version() const { return GAME_VERSION; }
@@ -2617,6 +2571,9 @@ void CGameClient::OnNewSnapshot(bool DummySwapped)
 	if(DummySwapped)
 		m_Camera.UpdateCamera();
 
+	// Bee asks the server for a wider snapshot independently of the user's
+	// actual camera zoom. CameraInfo below continues to use the unscaled zoom.
+	const float BeeNetworkMultiplier = g_Config.m_ClBeeEnabled ? std::clamp(g_Config.m_ClBeeNetworkDistance / 100.0f, 1.0f, 3.0f) : 1.0f;
 	float ShowDistanceZoom = m_Camera.m_Zoom;
 	float Zoom = m_Camera.m_Zoom;
 	if(m_Camera.m_Zooming)
@@ -2624,10 +2581,11 @@ void CGameClient::OnNewSnapshot(bool DummySwapped)
 		if(m_Camera.m_ZoomSmoothingTarget > m_Camera.m_Zoom) // Zooming out
 			ShowDistanceZoom = m_Camera.m_ZoomSmoothingTarget;
 		else if(m_Camera.m_ZoomSmoothingTarget < m_Camera.m_Zoom && m_LastShowDistanceZoom > 0) // Zooming in
-			ShowDistanceZoom = m_LastShowDistanceZoom;
+			ShowDistanceZoom = m_LastShowDistanceZoom / BeeNetworkMultiplier;
 
 		Zoom = m_Camera.m_ZoomSmoothingTarget;
 	}
+	ShowDistanceZoom *= BeeNetworkMultiplier;
 
 	float Deadzone = m_Camera.Deadzone();
 	float FollowFactor = m_Camera.FollowFactor();

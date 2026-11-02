@@ -2,6 +2,8 @@
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include "menus.h"
 
+#include <algorithm>
+
 #include <base/dbg.h>
 #include <base/math.h>
 #include <base/str.h>
@@ -423,14 +425,85 @@ void CMenus::RenderSettingsBee(CUIRect MainView)
 
 	MainView.HSplitTop(12.0f, nullptr, &MainView);
 	MainView.HSplitTop(26.0f, &Row, &MainView);
-	Ui()->DoLabel(&Row, Localize("Bee displays a second view without changing your main camera."), 14.0f, TEXTALIGN_ML);
+	Ui()->DoLabel(&Row, Localize("Bee follows a player in an independent view; your main camera is not changed."), 14.0f, TEXTALIGN_ML);
+
+	MainView.HSplitTop(30.0f, &Row, &MainView);
+	CUIRect TargetLabel, TargetButton;
+	Row.VSplitLeft(115.0f, &TargetLabel, &TargetButton);
+	Ui()->DoLabel(&TargetLabel, Localize("Follow player:"), 14.0f, TEXTALIGN_ML);
+
+	int aActiveIds[MAX_CLIENTS];
+	int NumActive = 0;
+	int CurrentIndex = -1;
+	for(int ClientId = 0; ClientId < MAX_CLIENTS; ++ClientId)
+	{
+		if(!GameClient()->m_Snap.m_aCharacters[ClientId].m_Active)
+			continue;
+		aActiveIds[NumActive] = ClientId;
+		if(g_Config.m_ClBeeTargetName[0] != '\0' &&
+			str_comp_nocase(GameClient()->m_aClients[ClientId].m_aName, g_Config.m_ClBeeTargetName) == 0)
+			CurrentIndex = NumActive;
+		++NumActive;
+	}
+
+	char aTargetLabel[128];
+	if(g_Config.m_ClBeeTargetName[0] == '\0')
+		str_copy(aTargetLabel, Localize("Camera center / all players"), sizeof(aTargetLabel));
+	else
+		str_format(aTargetLabel, sizeof(aTargetLabel), "%s", g_Config.m_ClBeeTargetName);
+	static CButtonContainer s_BeeTargetButton;
+	if(DoButton_Menu(&s_BeeTargetButton, aTargetLabel, 0, &TargetButton))
+	{
+		if(NumActive == 0 || (CurrentIndex >= 0 && CurrentIndex + 1 >= NumActive))
+			g_Config.m_ClBeeTargetName[0] = '\0';
+		else
+		{
+			const int NextIndex = CurrentIndex < 0 ? 0 : CurrentIndex + 1;
+			str_copy(g_Config.m_ClBeeTargetName, GameClient()->m_aClients[aActiveIds[NextIndex]].m_aName, sizeof(g_Config.m_ClBeeTargetName));
+		}
+	}
 
 	MainView.HSplitTop(24.0f, &Row, &MainView);
-	Ui()->DoLabel(&Row, Localize("Drag the top bar to move it; drag the lower-right corner to resize."), 14.0f, TEXTALIGN_ML);
+	Ui()->DoLabel(&Row, Localize("Use the mouse wheel over Bee to zoom its view. The main camera FOV stays unchanged."), 14.0f, TEXTALIGN_ML);
 
 	MainView.HSplitTop(24.0f, &Row, &MainView);
-	Ui()->DoLabel(&Row, Localize("Set cl_bee_target_name to a player nickname; leave it empty to fit all visible players. Scroll over Bee to cycle player names."), 14.0f, TEXTALIGN_ML);
+	Ui()->DoLabel(&Row, Localize("Drag the invisible top edge to move Bee; drag the invisible lower-right corner to resize it."), 14.0f, TEXTALIGN_ML);
+
+	MainView.HSplitTop(30.0f, &Row, &MainView);
+	CUIRect DistanceLabel, DistanceMinus, DistanceValue, DistancePlus;
+	Row.VSplitLeft(150.0f, &DistanceLabel, &DistanceMinus);
+	DistanceMinus.VSplitLeft(30.0f, &DistanceMinus, &DistanceValue);
+	DistanceValue.VSplitLeft(92.0f, &DistanceValue, &DistancePlus);
+	Ui()->DoLabel(&DistanceLabel, Localize("Player render distance:"), 14.0f, TEXTALIGN_ML);
+	static CButtonContainer s_BeeDistanceMinus;
+	static CButtonContainer s_BeeDistancePlus;
+	if(DoButton_Menu(&s_BeeDistanceMinus, "-", 0, &DistanceMinus))
+		g_Config.m_ClBeePlayerDistance = std::max(100, g_Config.m_ClBeePlayerDistance - 500);
+	char aDistance[32];
+	str_format(aDistance, sizeof(aDistance), "%d", g_Config.m_ClBeePlayerDistance);
+	Ui()->DoLabel(&DistanceValue, aDistance, 14.0f, TEXTALIGN_MC);
+	if(DoButton_Menu(&s_BeeDistancePlus, "+", 0, &DistancePlus))
+		g_Config.m_ClBeePlayerDistance = std::min(20000, g_Config.m_ClBeePlayerDistance + 500);
+
+	MainView.HSplitTop(30.0f, &Row, &MainView);
+	CUIRect NetworkLabel, NetworkMinus, NetworkValue, NetworkPlus;
+	Row.VSplitLeft(150.0f, &NetworkLabel, &NetworkMinus);
+	NetworkMinus.VSplitLeft(30.0f, &NetworkMinus, &NetworkValue);
+	NetworkValue.VSplitLeft(92.0f, &NetworkValue, &NetworkPlus);
+	Ui()->DoLabel(&NetworkLabel, Localize("Network visibility:"), 14.0f, TEXTALIGN_ML);
+	static CButtonContainer s_BeeNetworkMinus;
+	static CButtonContainer s_BeeNetworkPlus;
+	if(DoButton_Menu(&s_BeeNetworkMinus, "-", 0, &NetworkMinus))
+		g_Config.m_ClBeeNetworkDistance = std::max(100, g_Config.m_ClBeeNetworkDistance - 25);
+	char aNetworkDistance[32];
+	str_format(aNetworkDistance, sizeof(aNetworkDistance), "%d%% (%.2fx)", g_Config.m_ClBeeNetworkDistance, g_Config.m_ClBeeNetworkDistance / 100.0f);
+	Ui()->DoLabel(&NetworkValue, aNetworkDistance, 14.0f, TEXTALIGN_MC);
+	if(DoButton_Menu(&s_BeeNetworkPlus, "+", 0, &NetworkPlus))
+		g_Config.m_ClBeeNetworkDistance = std::min(300, g_Config.m_ClBeeNetworkDistance + 25);
 
 	MainView.HSplitTop(24.0f, &Row, &MainView);
-	Ui()->DoLabel(&Row, Localize("Position, size and zoom are saved in the client configuration."), 14.0f, TEXTALIGN_ML);
+	Ui()->DoLabel(&Row, Localize("You can also set the target nickname with cl_bee_target_name in the console."), 14.0f, TEXTALIGN_ML);
+
+	MainView.HSplitTop(24.0f, &Row, &MainView);
+	Ui()->DoLabel(&Row, Localize("Bee position, size, target, zoom, player distance and network visibility are saved in the client configuration."), 14.0f, TEXTALIGN_ML);
 }

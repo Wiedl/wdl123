@@ -57,7 +57,7 @@ public:
 	int Sizeof() const override { return sizeof(*this); }
 	void OnInit() override;
 	void OnRender() override;
-	void RenderBee() { OnRender(); }
+	void RenderBee(vec2 Center, float MaxDistance);
 
 	const std::shared_ptr<CManagedTeeRenderInfo> &NinjaTeeRenderInfo() const { return m_pNinjaTeeRenderInfo; }
 	const std::shared_ptr<CManagedTeeRenderInfo> &SpectatorTeeRenderInfo() const { return m_pSpectatorTeeRenderInfo; }
