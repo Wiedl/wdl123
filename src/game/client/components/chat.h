@@ -164,6 +164,7 @@ class CChat : public CComponent
 	static void ConClearChat(IConsole::IResult *pResult, void *pUserData);
 	static void ConChatSearch(IConsole::IResult *pResult, void *pUserData);
 	static void ConChatSearchClear(IConsole::IResult *pResult, void *pUserData);
+	static void ConChatCopyLast(IConsole::IResult *pResult, void *pUserData);
 
 	static void ConchainChatOld(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainChatFontSize(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
