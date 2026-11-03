@@ -9,6 +9,8 @@
 #include <base/log_color.h>
 #include <base/time.h>
 
+#include <cctype>
+
 #include <engine/editor.h>
 #include <engine/external/regex.h>
 #include <engine/graphics.h>
@@ -152,7 +154,6 @@ void CChat::Reset()
 	m_aCurrentInputText[0] = '\0';
 	m_ScrollOffset = 0;
 	m_ShowBeforeInput = false;
-	m_MouseModeActive = false;
 	m_RenderedLineCount = 0;
 	DisableMode();
 	m_vServerCommands.clear();
@@ -263,7 +264,10 @@ bool CChat::OnInput(const IInput::CEvent &Event)
 
 	if(Event.m_Flags & IInput::FLAG_PRESS && Event.m_Key == KEY_MOUSE_WHEEL_UP)
 	{
-		m_ScrollOffset = std::min(m_ScrollOffset + 3, MAX_LINES - 1);
+		int MaxScrollOffset = 0;
+		while(MaxScrollOffset < MAX_LINES - 1 && m_aLines[(m_CurrentLine - MaxScrollOffset - 1 + MAX_LINES) % MAX_LINES].m_Initialized)
+			++MaxScrollOffset;
+		m_ScrollOffset = std::min(m_ScrollOffset + 3, MaxScrollOffset);
 		return true;
 	}
 	else if(Event.m_Flags & IInput::FLAG_PRESS && Event.m_Key == KEY_MOUSE_WHEEL_DOWN)
