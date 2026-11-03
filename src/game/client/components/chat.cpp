@@ -150,6 +150,7 @@ void CChat::Reset()
 	m_ServerSupportsCommandInfo = false;
 	m_ServerCommandsNeedSorting = false;
 	m_aCurrentInputText[0] = '\0';
+	m_aSearchQuery[0] = '\0';
 	DisableMode();
 	m_vServerCommands.clear();
 
@@ -207,6 +208,20 @@ void CChat::ConClearChat(IConsole::IResult *pResult, void *pUserData)
 	((CChat *)pUserData)->ClearLines();
 }
 
+void CChat::ConChatSearch(IConsole::IResult *pResult, void *pUserData)
+{
+	CChat *pChat = (CChat *)pUserData;
+	str_copy(pChat->m_aSearchQuery, pResult->GetString(0));
+	pChat->RebuildChat();
+}
+
+void CChat::ConChatSearchClear(IConsole::IResult *pResult, void *pUserData)
+{
+	CChat *pChat = (CChat *)pUserData;
+	pChat->m_aSearchQuery[0] = '\0';
+	pChat->RebuildChat();
+}
+
 void CChat::ConchainChatOld(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
 {
 	pfnCallback(pResult, pCallbackUserData);
@@ -242,6 +257,8 @@ void CChat::OnConsoleInit()
 	Console()->Register("+show_chat", "", CFGFLAG_CLIENT, ConShowChat, this, "Show chat");
 	Console()->Register("echo", "r[message]", CFGFLAG_CLIENT | CFGFLAG_STORE, ConEcho, this, "Echo the text in chat window");
 	Console()->Register("clear_chat", "", CFGFLAG_CLIENT | CFGFLAG_STORE, ConClearChat, this, "Clear chat messages");
+	Console()->Register("chat_search", "r[query]", CFGFLAG_CLIENT, ConChatSearch, this, "Filter chat messages by text");
+	Console()->Register("chat_search_clear", "", CFGFLAG_CLIENT, ConChatSearchClear, this, "Clear chat message filter");
 }
 
 void CChat::OnInit()
@@ -601,6 +618,14 @@ void CChat::OnMessage(int MsgType, void *pRawMsg)
 		CNetMsg_Sv_CommandInfoRemove *pMsg = (CNetMsg_Sv_CommandInfoRemove *)pRawMsg;
 		UnregisterCommand(pMsg->m_pName);
 	}
+}
+
+bool CChat::LineMatchesSearch(const CLine &Line) const
+{
+	if(m_aSearchQuery[0] == '\0')
+		return true;
+	return str_utf8_find_nocase(Line.m_aName, m_aSearchQuery) != nullptr ||
+		str_utf8_find_nocase(Line.m_aText, m_aSearchQuery) != nullptr;
 }
 
 bool CChat::LineShouldHighlight(const char *pLine, const char *pName)
@@ -987,6 +1012,8 @@ void CChat::OnPrepareLines(float y)
 		CLine &Line = m_aLines[((m_CurrentLine - i) + MAX_LINES) % MAX_LINES];
 		if(!Line.m_Initialized)
 			break;
+		if(!LineMatchesSearch(Line))
+			continue;
 		if(Now > Line.m_Time + 16 * time_freq() && !m_PrevShowChat)
 			break;
 
@@ -1410,6 +1437,8 @@ void CChat::OnRender()
 		CLine &Line = m_aLines[((m_CurrentLine - i) + MAX_LINES) % MAX_LINES];
 		if(!Line.m_Initialized)
 			break;
+		if(!LineMatchesSearch(Line))
+			continue;
 		if(Now > Line.m_Time + 16 * time_freq() && !m_PrevShowChat)
 			break;
 
