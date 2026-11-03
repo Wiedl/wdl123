@@ -1405,16 +1405,8 @@ float CUi::DoScrollbarV(const void *pId, const CUIRect *pRect, float Current)
 	}
 
 	// render
-	const bool Hovered = InsideRail || InsideHandle || CheckActiveItem(pId);
-	Rail.Draw(ColorRGBA(0.94f, 0.94f, 0.94f, 0.75f), IGraphics::CORNER_ALL, Rail.w / 2.0f);
-	if(Hovered)
-	{
-		Handle.x -= 1.0f;
-		Handle.w += 2.0f;
-	}
-	const ColorRGBA HandleColor = CheckActiveItem(pId) ? ColorRGBA(0.32f, 0.32f, 0.32f, 1.0f) :
-		(Hovered ? ColorRGBA(0.42f, 0.42f, 0.42f, 1.0f) : ColorRGBA(0.58f, 0.58f, 0.58f, 0.9f));
-	Handle.Draw(HandleColor, IGraphics::CORNER_ALL, Handle.w / 2.0f);
+	Rail.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.25f), IGraphics::CORNER_ALL, Rail.w / 2.0f);
+	Handle.Draw(ms_ScrollBarColorFunction.GetColor(CheckActiveItem(pId), HotItem() == pId), IGraphics::CORNER_ALL, Handle.w / 2.0f);
 
 	return ReturnValue;
 }
