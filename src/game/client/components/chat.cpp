@@ -1049,7 +1049,20 @@ bool CChat::OpenFirstLink(const CLine &Line) const
 	if(!str_startswith(aUrl, "http://") && !str_startswith(aUrl, "https://"))
 		return false;
 	const char *pHost = str_find(aUrl, "://") + 3;
-	if(!pHost[0] || pHost[0] == '.' || pHost[0] == '/' || !str_find(pHost, '.'))
+	const char *pHostEnd = pHost;
+	while(*pHostEnd && *pHostEnd != '/' && *pHostEnd != '?' && *pHostEnd != '#' && *pHostEnd != ':')
+		++pHostEnd;
+	if(pHostEnd == pHost || str_find(pHost, "@"))
+		return false;
+	bool HasDot = false;
+	for(const char *pChar = pHost; pChar < pHostEnd; ++pChar)
+	{
+		const unsigned char Ch = *pChar;
+		if(!(isalnum(Ch) || Ch == '.' || Ch == '-'))
+			return false;
+		HasDot |= Ch == '.';
+	}
+	if(!HasDot || pHost[0] == '.' || pHostEnd[-1] == '.' || str_find(pHost, ".."))
 		return false;
 	return Client()->ViewLink(aUrl);
 }
