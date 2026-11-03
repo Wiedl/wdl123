@@ -33,6 +33,35 @@
 
 char CChat::ms_aDisplayText[MAX_CHAT_LENGTH] = "";
 
+namespace
+{
+	CUi::SSelectionPopupContext gs_ChatContextMenu;
+	int gs_ChatContextLine = -1;
+
+	void OpenChatSearch(const char *pText)
+	{
+		char aUrl[4096] = "https://www.google.com/search?q=";
+		char *pDst = aUrl + str_length(aUrl);
+		static const char s_aHex[] = "0123456789ABCDEF";
+		for(const unsigned char *pSrc = (const unsigned char *)pText; *pSrc && pDst < aUrl + sizeof(aUrl) - 4; ++pSrc)
+		{
+			if((*pSrc >= 'a' && *pSrc <= 'z') || (*pSrc >= 'A' && *pSrc <= 'Z') ||
+				(*pSrc >= '0' && *pSrc <= '9') || *pSrc == '-' || *pSrc == '_' || *pSrc == '.' || *pSrc == '~')
+				*pDst++ = *pSrc;
+			else if(*pSrc == ' ')
+				*pDst++ = '+';
+			else
+			{
+				*pDst++ = '%';
+				*pDst++ = s_aHex[*pSrc >> 4];
+				*pDst++ = s_aHex[*pSrc & 15];
+			}
+		}
+		*pDst = '\\0';
+		Client()->ViewLink(aUrl);
+	}
+}
+
 CChat::CLine::CLine()
 {
 	m_TextContainerIndex.Reset();
@@ -281,7 +310,28 @@ bool CChat::OnInput(const IInput::CEvent &Event)
 		if(LineIndex >= 0)
 		{
 			const CLine &Line = m_aLines[LineIndex];
-			if(Event.m_Key == KEY_MOUSE_1 && OpenFirstLink(Line))
+			if(Event.m_Key == KEY_MOUSE_2)
+			{
+				gs_ChatContextLine = LineIndex;
+				gs_ChatContextMenu.Reset();
+				gs_ChatContextMenu.m_vEntries.emplace_back(Localize("Copy"));
+				gs_ChatContextMenu.m_vEntries.emplace_back(Localize("Search in browser"));
+				if(Line.m_aText[0] != '\\0' && Line.m_ClientId >= 0)
+					gs_ChatContextMenu.m_vEntries.emplace_back(Localize("Translate"));
+				gs_ChatContextMenu.m_EntryHeight = 16.0f;
+				gs_ChatContextMenu.m_EntryPadding = 2.0f;
+				gs_ChatContextMenu.m_EntrySpacing = 1.0f;
+				gs_ChatContextMenu.m_FontSize = 10.0f;
+				gs_ChatContextMenu.m_Width = 130.0f;
+				gs_ChatContextMenu.m_AlignmentHeight = -1.0f;
+				gs_ChatContextMenu.m_TransparentButtons = true;
+				const vec2 Mouse = Input()->NativeMousePos();
+				const float X = Mouse.x * 300.0f * Graphics()->ScreenAspect() / Graphics()->ScreenWidth();
+				const float Y = Mouse.y * 300.0f / Graphics()->ScreenHeight();
+				Ui()->ShowPopupSelection(X, Y, &gs_ChatContextMenu);
+				return true;
+			}
+			if(OpenFirstLink(Line))
 				return true;
 			CopyLineToClipboard(Line);
 			return true;
@@ -1401,6 +1451,28 @@ void CChat::OnRender()
 	if(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
 		return;
 
+	// Handle the selected chat context-menu action.
+	if(gs_ChatContextMenu.m_SelectionIndex >= 0)
+	{
+		const int Action = gs_ChatContextMenu.m_SelectionIndex;
+		if(gs_ChatContextLine >= 0 && gs_ChatContextLine < MAX_LINES && m_aLines[gs_ChatContextLine].m_Initialized)
+		{
+			CLine &Line = m_aLines[gs_ChatContextLine];
+			if(Action == 0)
+				CopyLineToClipboard(Line);
+			else if(Action == 1)
+			{
+				char aSearchText[MAX_CHAT_LENGTH + 80];
+				str_format(aSearchText, sizeof(aSearchText), "%s %s", Line.m_aName, Line.m_aText);
+				OpenChatSearch(aSearchText);
+			}
+			else if(Action == 2)
+				GameClient()->m_Translate.Translate(Line);
+		}
+		gs_ChatContextMenu.Reset();
+		gs_ChatContextLine = -1;
+	}
+
 	// send pending chat messages
 	if(m_PendingChatCounter > 0 && m_LastChatSend + time_freq() < time())
 	{
@@ -1581,6 +1653,19 @@ void CChat::OnRender()
 			const ColorRGBA TextOutlineColor = TextRender()->DefaultTextOutlineColor().WithMultipliedAlpha(Blend);
 			TextRender()->RenderTextContainer(Line.m_TextContainerIndex, TextColor, TextOutlineColor, 0, (y + RealMsgPaddingY / 2.0f) - Line.m_TextYOffset);
 		}
+	}
+
+	// Interactive chat-history scrollbar. 0 follows the newest message; 1 shows the oldest.
+	int MaxScrollOffset = 0;
+	while(MaxScrollOffset < MAX_LINES - 1 && m_aLines[(m_CurrentLine - MaxScrollOffset - 1 + MAX_LINES) % MAX_LINES].m_Initialized)
+		++MaxScrollOffset;
+	if(MaxScrollOffset > 0 && (m_Mode != MODE_NONE || m_Show || g_Config.m_ClShowChat))
+	{
+		CUIRect Scrollbar = {5.0f + g_Config.m_ClChatWidth + 7.0f, HeightLimit, 7.0f, std::max(20.0f, 300.0f - HeightLimit - 30.0f)};
+		const float Current = (float)m_ScrollOffset / MaxScrollOffset;
+		const float NewValue = Ui()->DoScrollbarV(&m_ScrollOffset, &Scrollbar, Current);
+		if(NewValue != Current)
+			m_ScrollOffset = std::clamp((int)std::round(NewValue * MaxScrollOffset), 0, MaxScrollOffset);
 	}
 }
 
