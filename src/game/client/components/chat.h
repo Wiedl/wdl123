@@ -153,7 +153,7 @@ class CChat : public CComponent
 	char m_aCurrentInputText[MAX_CHAT_LENGTH];
 	int m_ScrollOffset;
 	bool m_ShowBeforeInput;
-	bool m_MouseModeActive;
+	bool m_MouseModeActive = false;
 	int m_aRenderedLineIndex[MAX_LINES];
 	float m_aRenderedLineTop[MAX_LINES];
 	float m_aRenderedLineBottom[MAX_LINES];
