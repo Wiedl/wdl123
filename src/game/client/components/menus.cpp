@@ -2396,6 +2396,12 @@ void CMenus::OnRender()
 		}
 		else if(Client()->State() != IClient::STATE_DEMOPLAYBACK)
 		{
+			if(Ui()->IsPopupOpen())
+			{
+				Ui()->MapScreen();
+				Ui()->RenderPopupMenus();
+				Ui()->FinishCheck();
+			}
 			Ui()->ClearHotkeys();
 			return;
 		}
