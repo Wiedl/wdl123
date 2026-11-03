@@ -291,9 +291,6 @@ bool CChat::OnInput(const IInput::CEvent &Event)
 {
 	if(m_Mode == MODE_NONE)
 		return false;
-	if(Ui()->IsPopupOpen())
-		return true;
-
 	if(Event.m_Flags & IInput::FLAG_PRESS && Event.m_Key == KEY_MOUSE_WHEEL_UP)
 	{
 		int MaxScrollOffset = 0;
@@ -1662,7 +1659,7 @@ void CChat::OnRender()
 	int MaxScrollOffset = 0;
 	while(MaxScrollOffset < MAX_LINES - 1 && m_aLines[(m_CurrentLine - MaxScrollOffset - 1 + MAX_LINES) % MAX_LINES].m_Initialized)
 		++MaxScrollOffset;
-	if(MaxScrollOffset > 0 && (m_Mode != MODE_NONE || m_Show || g_Config.m_ClShowChat))
+	if(MaxScrollOffset > 0 && m_Mode != MODE_NONE)
 	{
 		CUIRect Scrollbar = {5.0f + g_Config.m_ClChatWidth + 7.0f, HeightLimit, 7.0f, std::max(20.0f, 300.0f - HeightLimit - 30.0f)};
 		const float Current = (float)m_ScrollOffset / MaxScrollOffset;
