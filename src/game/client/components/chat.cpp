@@ -10,6 +10,7 @@
 #include <base/time.h>
 
 #include <cctype>
+#include <cmath>
 
 #include <engine/editor.h>
 #include <engine/external/regex.h>
@@ -38,7 +39,7 @@ namespace
 	CUi::SSelectionPopupContext gs_ChatContextMenu;
 	int gs_ChatContextLine = -1;
 
-	void OpenChatSearch(const char *pText)
+	void OpenChatSearch(IClient *pClient, const char *pText)
 	{
 		char aUrl[4096] = "https://www.google.com/search?q=";
 		char *pDst = aUrl + str_length(aUrl);
@@ -58,7 +59,7 @@ namespace
 			}
 		}
 		*pDst = '\\0';
-		Client()->ViewLink(aUrl);
+		pClient->ViewLink(aUrl);
 	}
 }
 
@@ -1464,7 +1465,7 @@ void CChat::OnRender()
 			{
 				char aSearchText[MAX_CHAT_LENGTH + 80];
 				str_format(aSearchText, sizeof(aSearchText), "%s %s", Line.m_aName, Line.m_aText);
-				OpenChatSearch(aSearchText);
+				OpenChatSearch(Client(), aSearchText);
 			}
 			else if(Action == 2)
 				GameClient()->m_Translate.Translate(Line);
