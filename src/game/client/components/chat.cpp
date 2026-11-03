@@ -289,7 +289,8 @@ void CChat::OnInit()
 
 bool CChat::OnInput(const IInput::CEvent &Event)
 {
-	if(m_Mode == MODE_NONE)
+	// Right-click context actions must also work while chat input is closed.
+	if(m_Mode == MODE_NONE && !((Event.m_Flags & IInput::FLAG_PRESS) && Event.m_Key == KEY_MOUSE_2))
 		return false;
 	if(Event.m_Flags & IInput::FLAG_PRESS && Event.m_Key == KEY_MOUSE_WHEEL_UP)
 	{
@@ -1661,11 +1662,32 @@ void CChat::OnRender()
 		++MaxScrollOffset;
 	if(MaxScrollOffset > 0 && m_Mode != MODE_NONE)
 	{
-		CUIRect Scrollbar = {5.0f + g_Config.m_ClChatWidth + 7.0f, HeightLimit, 7.0f, std::max(20.0f, 300.0f - HeightLimit - 30.0f)};
+		// Keep the scrollbar compact and centered beside the chat history.
+		constexpr float ScrollbarHeight = 105.0f;
+		CUIRect Scrollbar = {5.0f + g_Config.m_ClChatWidth + 7.0f, HeightLimit + std::max(0.0f, (300.0f - HeightLimit - 30.0f - ScrollbarHeight) / 2.0f), 12.0f, ScrollbarHeight};
 		const float Current = (float)m_ScrollOffset / MaxScrollOffset;
 		const float NewValue = Ui()->DoScrollbarV(&m_ScrollOffset, &Scrollbar, Current);
 		if(NewValue != Current)
 			m_ScrollOffset = std::clamp((int)std::round(NewValue * MaxScrollOffset), 0, MaxScrollOffset);
+
+		// Overlay a small animated teardrop marker on the narrow scrollbar handle.
+		const float ThumbY = Scrollbar.y + 5.0f + (Scrollbar.h - 12.0f) * NewValue;
+		const float CenterX = Scrollbar.x + Scrollbar.w / 2.0f;
+		const bool Hovered = Ui()->MouseHovered(&Scrollbar);
+		const float Pulse = 0.9f + 0.1f * std::sin((float)time() / (float)time_freq() * 3.0f);
+		const float Radius = Hovered ? 4.8f : 4.0f;
+		const float Alpha = (Hovered ? 0.95f : 0.75f) * Pulse;
+		const ColorRGBA DropColor(0.45f, 0.78f, 1.0f, Alpha);
+		Graphics()->TextureClear();
+		Graphics()->QuadsBegin();
+		Graphics()->SetColor(DropColor);
+		const IGraphics::CFreeformItem DropTip(
+			vec2(CenterX, ThumbY - 7.0f), vec2(CenterX, ThumbY - 7.0f),
+			vec2(CenterX + Radius, ThumbY + 1.0f), vec2(CenterX - Radius, ThumbY + 1.0f));
+		Graphics()->QuadsDrawFreeform(&DropTip, 1);
+		Graphics()->QuadsEnd();
+		Graphics()->SetColor(DropColor);
+		Graphics()->DrawCircle(CenterX, ThumbY + 2.0f, Radius, 16);
 	}
 }
 
