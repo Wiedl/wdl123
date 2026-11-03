@@ -263,6 +263,21 @@ void CChat::OnInit()
 
 bool CChat::OnInput(const IInput::CEvent &Event)
 {
+	// When chat is closed, let all input pass through unless right-clicking a chat line.
+	if(m_Mode == MODE_NONE)
+	{
+		if((Event.m_Flags & IInput::FLAG_PRESS) && Event.m_Key == KEY_MOUSE_2)
+		{
+			const int LineIndex = GetHoveredLine();
+			if(LineIndex >= 0)
+			{
+				CopyLineToClipboard(m_aLines[LineIndex]);
+				return true;
+			}
+		}
+		return false;
+	}
+
 	// While chat input is active, capture right-click so it cannot trigger
 	// the bound in-game action. On a chat line, use it to copy that line.
 	if((Event.m_Flags & IInput::FLAG_PRESS) && Event.m_Key == KEY_MOUSE_2)
@@ -270,7 +285,7 @@ bool CChat::OnInput(const IInput::CEvent &Event)
 		const int LineIndex = GetHoveredLine();
 		if(LineIndex >= 0)
 			CopyLineToClipboard(m_aLines[LineIndex]);
-		return m_Mode != MODE_NONE || LineIndex >= 0;
+		return true;
 	}
 	if(Event.m_Flags & IInput::FLAG_PRESS && Event.m_Key == KEY_MOUSE_WHEEL_UP)
 	{
@@ -296,7 +311,7 @@ bool CChat::OnInput(const IInput::CEvent &Event)
 			CopyLineToClipboard(Line);
 			return true;
 		}
-		return false;
+		return true;
 	}
 	else if(Event.m_Flags & IInput::FLAG_PRESS && Event.m_Key == KEY_ESCAPE)
 	{
