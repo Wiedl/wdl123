@@ -1678,10 +1678,11 @@ void CChat::OnRender()
 		const float Radius = Hovered ? 4.8f : 4.0f;
 		const float Alpha = (Hovered ? 0.95f : 0.75f) * Pulse;
 		const ColorRGBA DropColor(0.45f, 0.78f, 1.0f, Alpha);
-		// Use the supported circle primitive here; freeform quads can be
-		// submitted outside the renderer's active quad batch in this UI pass.
+		// DrawCircle emits freeform quads and therefore must run inside a quad batch.
+		Graphics()->QuadsBegin();
 		Graphics()->SetColor(DropColor);
 		Graphics()->DrawCircle(CenterX, ThumbY, Radius, 16);
+		Graphics()->QuadsEnd();
 	}
 }
 
