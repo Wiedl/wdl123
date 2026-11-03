@@ -58,7 +58,7 @@ namespace
 				*pDst++ = s_aHex[*pSrc & 15];
 			}
 		}
-		*pDst = '\\0';
+		*pDst = '\0';
 		pClient->ViewLink(aUrl);
 	}
 }
@@ -291,6 +291,8 @@ bool CChat::OnInput(const IInput::CEvent &Event)
 {
 	if(m_Mode == MODE_NONE)
 		return false;
+	if(Ui()->IsPopupOpen())
+		return true;
 
 	if(Event.m_Flags & IInput::FLAG_PRESS && Event.m_Key == KEY_MOUSE_WHEEL_UP)
 	{
@@ -317,7 +319,7 @@ bool CChat::OnInput(const IInput::CEvent &Event)
 				gs_ChatContextMenu.Reset();
 				gs_ChatContextMenu.m_vEntries.emplace_back(Localize("Copy"));
 				gs_ChatContextMenu.m_vEntries.emplace_back(Localize("Search in browser"));
-				if(Line.m_aText[0] != '\\0' && Line.m_ClientId >= 0)
+				if(Line.m_aText[0] != '\0' && Line.m_ClientId >= 0)
 					gs_ChatContextMenu.m_vEntries.emplace_back(Localize("Translate"));
 				gs_ChatContextMenu.m_EntryHeight = 16.0f;
 				gs_ChatContextMenu.m_EntryPadding = 2.0f;
