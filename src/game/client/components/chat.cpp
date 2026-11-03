@@ -1028,9 +1028,9 @@ bool CChat::OpenFirstLink(const CLine &Line) const
 		return false;
 	char aUrl[2048];
 	int Length = 0;
-	while(pStart[Length] && pStart[Length] != ' ' && pStart[Length] != '\\t' &&
-		pStart[Length] != '\\n' && pStart[Length] != '<' && pStart[Length] != '>' &&
-		pStart[Length] != '"' && pStart[Length] != '\\'' && Length < (int)sizeof(aUrl) - 1)
+	while(pStart[Length] && pStart[Length] != ' ' && pStart[Length] != '\t' &&
+		pStart[Length] != '\n' && pStart[Length] != '<' && pStart[Length] != '>' &&
+		pStart[Length] != '"' && pStart[Length] != '\'' && Length < (int)sizeof(aUrl) - 1)
 	{
 		const unsigned char Ch = pStart[Length];
 		if(!(isalnum(Ch) || Ch == ':' || Ch == '/' || Ch == '?' || Ch == '&' || Ch == '=' ||
