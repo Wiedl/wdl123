@@ -2318,8 +2318,9 @@ bool CMenus::OnCursorMove(float x, float y, IInput::ECursorType CursorType)
 
 bool CMenus::OnInput(const IInput::CEvent &Event)
 {
-	// Escape key is always handled to activate/deactivate menu
-	if((Event.m_Flags & IInput::FLAG_PRESS && Event.m_Key == KEY_ESCAPE) || IsActive())
+	// Popup menus can also be opened by in-game components (e.g. chat).
+	// Forward input to the UI while a popup is open, even when the main menu is inactive.
+	if(Ui()->IsPopupOpen() || (Event.m_Flags & IInput::FLAG_PRESS && Event.m_Key == KEY_ESCAPE) || IsActive())
 	{
 		Ui()->OnInput(Event);
 		return true;
