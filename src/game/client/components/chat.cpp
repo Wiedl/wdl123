@@ -263,14 +263,14 @@ void CChat::OnInit()
 
 bool CChat::OnInput(const IInput::CEvent &Event)
 {
-	// Only intercept right-clicks when they target an actual chat message.
-	if(m_Mode == MODE_NONE)
+	// While chat input is active, capture right-click so it cannot trigger
+	// the bound in-game action. On a chat line, use it to copy that line.
+	if((Event.m_Flags & IInput::FLAG_PRESS) && Event.m_Key == KEY_MOUSE_2)
 	{
-		if(!(Event.m_Flags & IInput::FLAG_PRESS) || Event.m_Key != KEY_MOUSE_2)
-			return false;
 		const int LineIndex = GetHoveredLine();
-		if(LineIndex < 0)
-			return false;
+		if(LineIndex >= 0)
+			CopyLineToClipboard(m_aLines[LineIndex]);
+		return m_Mode != MODE_NONE || LineIndex >= 0;
 	}
 	if(Event.m_Flags & IInput::FLAG_PRESS && Event.m_Key == KEY_MOUSE_WHEEL_UP)
 	{
@@ -285,17 +285,12 @@ bool CChat::OnInput(const IInput::CEvent &Event)
 		m_ScrollOffset = std::max(0, m_ScrollOffset - 3);
 		return true;
 	}
-	else if(Event.m_Flags & IInput::FLAG_PRESS && (Event.m_Key == KEY_MOUSE_1 || Event.m_Key == KEY_MOUSE_2))
+	else if(Event.m_Flags & IInput::FLAG_PRESS && Event.m_Key == KEY_MOUSE_1)
 	{
 		const int LineIndex = GetHoveredLine();
 		if(LineIndex >= 0)
 		{
 			const CLine &Line = m_aLines[LineIndex];
-			if(Event.m_Key == KEY_MOUSE_2)
-			{
-				CopyLineToClipboard(Line);
-				return true;
-			}
 			if(OpenFirstLink(Line))
 				return true;
 			CopyLineToClipboard(Line);
@@ -330,8 +325,7 @@ bool CChat::OnInput(const IInput::CEvent &Event)
 		else
 			SendChatQueued(m_Input.GetString());
 		m_pHistoryEntry = nullptr;
-		DisableMode();
-		GameClient()->OnRelease();
+		// Keep chat input active after sending so another message can be typed.
 		m_Input.Clear();
 	}
 	if(Event.m_Flags & IInput::FLAG_PRESS && Event.m_Key == KEY_TAB)
