@@ -1678,16 +1678,10 @@ void CChat::OnRender()
 		const float Radius = Hovered ? 4.8f : 4.0f;
 		const float Alpha = (Hovered ? 0.95f : 0.75f) * Pulse;
 		const ColorRGBA DropColor(0.45f, 0.78f, 1.0f, Alpha);
-		Graphics()->TextureClear();
-		Graphics()->QuadsBegin();
+		// Use the supported circle primitive here; freeform quads can be
+		// submitted outside the renderer's active quad batch in this UI pass.
 		Graphics()->SetColor(DropColor);
-		const IGraphics::CFreeformItem DropTip(
-			vec2(CenterX, ThumbY - 7.0f), vec2(CenterX, ThumbY - 7.0f),
-			vec2(CenterX + Radius, ThumbY + 1.0f), vec2(CenterX - Radius, ThumbY + 1.0f));
-		Graphics()->QuadsDrawFreeform(&DropTip, 1);
-		Graphics()->QuadsEnd();
-		Graphics()->SetColor(DropColor);
-		Graphics()->DrawCircle(CenterX, ThumbY + 2.0f, Radius, 16);
+		Graphics()->DrawCircle(CenterX, ThumbY, Radius, 16);
 	}
 }
 
