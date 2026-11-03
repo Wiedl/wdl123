@@ -151,6 +151,7 @@ class CChat : public CComponent
 	int64_t m_aLastSoundPlayed[CHAT_NUM];
 	bool m_IsInputCensored;
 	char m_aCurrentInputText[MAX_CHAT_LENGTH];
+	char m_aSearchQuery[MAX_CHAT_LENGTH];
 	bool m_EditingNewLine;
 
 	bool m_ServerSupportsCommandInfo;
@@ -161,12 +162,15 @@ class CChat : public CComponent
 	static void ConShowChat(IConsole::IResult *pResult, void *pUserData);
 	static void ConEcho(IConsole::IResult *pResult, void *pUserData);
 	static void ConClearChat(IConsole::IResult *pResult, void *pUserData);
+	static void ConChatSearch(IConsole::IResult *pResult, void *pUserData);
+	static void ConChatSearchClear(IConsole::IResult *pResult, void *pUserData);
 
 	static void ConchainChatOld(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainChatFontSize(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainChatWidth(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 
 	bool LineShouldHighlight(const char *pLine, const char *pName);
+	bool LineMatchesSearch(const CLine &Line) const;
 	void StoreSave(const char *pText);
 
 	friend class CBindChat;
