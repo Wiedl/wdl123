@@ -222,6 +222,18 @@ void CChat::ConChatSearchClear(IConsole::IResult *pResult, void *pUserData)
 	pChat->RebuildChat();
 }
 
+void CChat::ConChatCopyLast(IConsole::IResult *pResult, void *pUserData)
+{
+	CChat *pChat = (CChat *)pUserData;
+	const CLine &Line = pChat->m_aLines[pChat->m_CurrentLine];
+	if(!Line.m_Initialized)
+		return;
+
+	char aMessage[MAX_CHAT_LENGTH + 80];
+	str_format(aMessage, sizeof(aMessage), "%s%s%s", Line.m_aName, Line.m_ClientId >= 0 ? ": " : "", Line.m_aText);
+	pChat->Input()->SetClipboardText(aMessage);
+}
+
 void CChat::ConchainChatOld(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
 {
 	pfnCallback(pResult, pCallbackUserData);
@@ -259,6 +271,7 @@ void CChat::OnConsoleInit()
 	Console()->Register("clear_chat", "", CFGFLAG_CLIENT | CFGFLAG_STORE, ConClearChat, this, "Clear chat messages");
 	Console()->Register("chat_search", "r[query]", CFGFLAG_CLIENT, ConChatSearch, this, "Filter chat messages by text");
 	Console()->Register("chat_search_clear", "", CFGFLAG_CLIENT, ConChatSearchClear, this, "Clear chat message filter");
+	Console()->Register("chat_copy_last", "", CFGFLAG_CLIENT, ConChatCopyLast, this, "Copy the latest chat message to the clipboard");
 }
 
 void CChat::OnInit()
