@@ -1880,11 +1880,7 @@ void CHud::RenderSpectatorHud()
 
 	// draw the text
 	char aBuf[128];
-	if(GameClient()->m_MultiViewActivated)
-	{
-		str_copy(aBuf, Localize("Multi-View"));
-	}
-	else if(GameClient()->m_Snap.m_SpecInfo.m_SpectatorId != SPEC_FREEVIEW)
+	if(GameClient()->m_Snap.m_SpecInfo.m_SpectatorId != SPEC_FREEVIEW)
 	{
 		const auto &Player = GameClient()->m_aClients[GameClient()->m_Snap.m_SpecInfo.m_SpectatorId];
 		if(g_Config.m_ClShowIds)
