@@ -150,7 +150,10 @@ void CChat::Reset()
 	m_ServerSupportsCommandInfo = false;
 	m_ServerCommandsNeedSorting = false;
 	m_aCurrentInputText[0] = '\0';
-	m_aSearchQuery[0] = '\0';
+	m_ScrollOffset = 0;
+	m_ShowBeforeInput = false;
+	m_MouseModeActive = false;
+	m_RenderedLineCount = 0;
 	DisableMode();
 	m_vServerCommands.clear();
 
@@ -208,32 +211,6 @@ void CChat::ConClearChat(IConsole::IResult *pResult, void *pUserData)
 	((CChat *)pUserData)->ClearLines();
 }
 
-void CChat::ConChatSearch(IConsole::IResult *pResult, void *pUserData)
-{
-	CChat *pChat = (CChat *)pUserData;
-	str_copy(pChat->m_aSearchQuery, pResult->GetString(0));
-	pChat->RebuildChat();
-}
-
-void CChat::ConChatSearchClear(IConsole::IResult *pResult, void *pUserData)
-{
-	CChat *pChat = (CChat *)pUserData;
-	pChat->m_aSearchQuery[0] = '\0';
-	pChat->RebuildChat();
-}
-
-void CChat::ConChatCopyLast(IConsole::IResult *pResult, void *pUserData)
-{
-	CChat *pChat = (CChat *)pUserData;
-	const CLine &Line = pChat->m_aLines[pChat->m_CurrentLine];
-	if(!Line.m_Initialized)
-		return;
-
-	char aMessage[MAX_CHAT_LENGTH + 80];
-	str_format(aMessage, sizeof(aMessage), "%s%s%s", Line.m_aName, Line.m_ClientId >= 0 ? ": " : "", Line.m_aText);
-	pChat->Input()->SetClipboardText(aMessage);
-}
-
 void CChat::ConchainChatOld(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
 {
 	pfnCallback(pResult, pCallbackUserData);
@@ -269,9 +246,6 @@ void CChat::OnConsoleInit()
 	Console()->Register("+show_chat", "", CFGFLAG_CLIENT, ConShowChat, this, "Show chat");
 	Console()->Register("echo", "r[message]", CFGFLAG_CLIENT | CFGFLAG_STORE, ConEcho, this, "Echo the text in chat window");
 	Console()->Register("clear_chat", "", CFGFLAG_CLIENT | CFGFLAG_STORE, ConClearChat, this, "Clear chat messages");
-	Console()->Register("chat_search", "r[query]", CFGFLAG_CLIENT, ConChatSearch, this, "Filter chat messages by text");
-	Console()->Register("chat_search_clear", "", CFGFLAG_CLIENT, ConChatSearchClear, this, "Clear chat message filter");
-	Console()->Register("chat_copy_last", "", CFGFLAG_CLIENT, ConChatCopyLast, this, "Copy the latest chat message to the clipboard");
 }
 
 void CChat::OnInit()
@@ -287,7 +261,30 @@ bool CChat::OnInput(const IInput::CEvent &Event)
 	if(m_Mode == MODE_NONE)
 		return false;
 
-	if(Event.m_Flags & IInput::FLAG_PRESS && Event.m_Key == KEY_ESCAPE)
+	if(Event.m_Flags & IInput::FLAG_PRESS && Event.m_Key == KEY_MOUSE_WHEEL_UP)
+	{
+		m_ScrollOffset = std::min(m_ScrollOffset + 3, MAX_LINES - 1);
+		return true;
+	}
+	else if(Event.m_Flags & IInput::FLAG_PRESS && Event.m_Key == KEY_MOUSE_WHEEL_DOWN)
+	{
+		m_ScrollOffset = std::max(0, m_ScrollOffset - 3);
+		return true;
+	}
+	else if(Event.m_Flags & IInput::FLAG_PRESS && (Event.m_Key == KEY_MOUSE_1 || Event.m_Key == KEY_MOUSE_2))
+	{
+		const int LineIndex = GetHoveredLine();
+		if(LineIndex >= 0)
+		{
+			const CLine &Line = m_aLines[LineIndex];
+			if(Event.m_Key == KEY_MOUSE_1 && OpenFirstLink(Line))
+				return true;
+			CopyLineToClipboard(Line);
+			return true;
+		}
+		return true;
+	}
+	else if(Event.m_Flags & IInput::FLAG_PRESS && Event.m_Key == KEY_ESCAPE)
 	{
 		DisableMode();
 		GameClient()->OnRelease();
@@ -572,6 +569,12 @@ void CChat::EnableMode(int Team)
 		else
 			m_Mode = MODE_ALL;
 
+		m_ShowBeforeInput = m_Show;
+		m_Show = true;
+		m_ScrollOffset = 0;
+		Input()->MouseModeAbsolute();
+		m_MouseModeActive = true;
+
 		m_CompletionChosen = -1;
 		m_CompletionUsed = false;
 		m_Input.Activate(EInputPriority::CHAT);
@@ -584,6 +587,13 @@ void CChat::DisableMode()
 	{
 		m_Mode = MODE_NONE;
 		m_Input.Deactivate();
+		m_Show = m_ShowBeforeInput;
+		m_ScrollOffset = 0;
+		if(m_MouseModeActive)
+		{
+			Input()->MouseModeRelative();
+			m_MouseModeActive = false;
+		}
 	}
 }
 
@@ -631,14 +641,6 @@ void CChat::OnMessage(int MsgType, void *pRawMsg)
 		CNetMsg_Sv_CommandInfoRemove *pMsg = (CNetMsg_Sv_CommandInfoRemove *)pRawMsg;
 		UnregisterCommand(pMsg->m_pName);
 	}
-}
-
-bool CChat::LineMatchesSearch(const CLine &Line) const
-{
-	if(m_aSearchQuery[0] == '\0')
-		return true;
-	return str_utf8_find_nocase(Line.m_aName, m_aSearchQuery) != nullptr ||
-		str_utf8_find_nocase(Line.m_aText, m_aSearchQuery) != nullptr;
 }
 
 bool CChat::LineShouldHighlight(const char *pLine, const char *pName)
@@ -989,6 +991,65 @@ void CChat::AddLine(int ClientId, int Team, const char *pLine)
 	GameClient()->m_Translate.AutoTranslate(CurrentLine);
 }
 
+int CChat::GetHoveredLine() const
+{
+	if(m_RenderedLineCount == 0)
+		return -1;
+	const vec2 Mouse = Input()->NativeMousePos();
+	const float Width = 300.0f * Graphics()->ScreenAspect();
+	const float MouseX = Mouse.x * Width / Graphics()->ScreenWidth();
+	const float MouseY = Mouse.y * 300.0f / Graphics()->ScreenHeight();
+	if(MouseX < 0.0f || MouseX > g_Config.m_ClChatWidth + 20.0f)
+		return -1;
+	for(int i = 0; i < m_RenderedLineCount; ++i)
+		if(MouseY >= m_aRenderedLineTop[i] && MouseY <= m_aRenderedLineBottom[i])
+			return m_aRenderedLineIndex[i];
+	return -1;
+}
+
+void CChat::CopyLineToClipboard(const CLine &Line) const
+{
+	char aMessage[MAX_CHAT_LENGTH + 80];
+	str_format(aMessage, sizeof(aMessage), "%s%s%s", Line.m_aName, Line.m_ClientId >= 0 ? ": " : "", Line.m_aText);
+	Input()->SetClipboardText(aMessage);
+}
+
+bool CChat::OpenFirstLink(const CLine &Line) const
+{
+	const char *pStart = str_find(Line.m_aText, "https://");
+	const char *pHttp = str_find(Line.m_aText, "http://");
+	if(!pStart || (pHttp && pHttp < pStart))
+		pStart = pHttp;
+	if(!pStart)
+		return false;
+	char aUrl[2048];
+	int Length = 0;
+	while(pStart[Length] && pStart[Length] != ' ' && pStart[Length] != '\\t' &&
+		pStart[Length] != '\\n' && pStart[Length] != '<' && pStart[Length] != '>' &&
+		pStart[Length] != '"' && pStart[Length] != '\\'' && Length < (int)sizeof(aUrl) - 1)
+	{
+		const unsigned char Ch = pStart[Length];
+		if(!(isalnum(Ch) || Ch == ':' || Ch == '/' || Ch == '?' || Ch == '&' || Ch == '=' ||
+			Ch == '.' || Ch == '_' || Ch == '%' || Ch == '#' || Ch == '@' || Ch == '+' ||
+			Ch == '-' || Ch == '[' || Ch == ']'))
+			break;
+		++Length;
+	}
+	while(Length > 0 && (pStart[Length - 1] == '.' || pStart[Length - 1] == ',' ||
+		pStart[Length - 1] == '!' || pStart[Length - 1] == '?' || pStart[Length - 1] == ';' ||
+		pStart[Length - 1] == ')' || pStart[Length - 1] == ']'))
+		--Length;
+	if(Length < 10)
+		return false;
+	str_copy(aUrl, pStart, Length + 1);
+	if(!str_startswith(aUrl, "http://") && !str_startswith(aUrl, "https://"))
+		return false;
+	const char *pHost = str_find(aUrl, "://") + 3;
+	if(!pHost[0] || pHost[0] == '.' || pHost[0] == '/' || !str_find(pHost, '.'))
+		return false;
+	return Client()->ViewLink(aUrl);
+}
+
 void CChat::OnPrepareLines(float y)
 {
 	float x = 5.0f;
@@ -1020,13 +1081,11 @@ void CChat::OnPrepareLines(float y)
 	float TextBegin = Begin + RealMsgPaddingX / 2.0f;
 	int OffsetType = IsScoreBoardOpen ? 1 : 0;
 
-	for(int i = 0; i < MAX_LINES; i++)
+	for(int i = 0; i < MAX_LINES - m_ScrollOffset; i++)
 	{
-		CLine &Line = m_aLines[((m_CurrentLine - i) + MAX_LINES) % MAX_LINES];
+		CLine &Line = m_aLines[((m_CurrentLine - m_ScrollOffset - i) + MAX_LINES) % MAX_LINES];
 		if(!Line.m_Initialized)
 			break;
-		if(!LineMatchesSearch(Line))
-			continue;
 		if(Now > Line.m_Time + 16 * time_freq() && !m_PrevShowChat)
 			break;
 
@@ -1422,7 +1481,7 @@ void CChat::OnRender()
 #if defined(CONF_VIDEORECORDER)
 	if(!((g_Config.m_ClShowChat && !IVideo::Current()) || (g_Config.m_ClVideoShowChat && IVideo::Current())))
 #else
-	if(!g_Config.m_ClShowChat)
+	if(!g_Config.m_ClShowChat && !m_Show)
 #endif
 		return;
 
@@ -1445,13 +1504,13 @@ void CChat::OnRender()
 		RealMsgPaddingY = 0;
 	}
 
-	for(int i = 0; i < MAX_LINES; i++)
+	m_RenderedLineCount = 0;
+	for(int i = 0; i < MAX_LINES - m_ScrollOffset; i++)
 	{
-		CLine &Line = m_aLines[((m_CurrentLine - i) + MAX_LINES) % MAX_LINES];
+		const int LineIndex = ((m_CurrentLine - m_ScrollOffset - i) + MAX_LINES) % MAX_LINES;
+		CLine &Line = m_aLines[LineIndex];
 		if(!Line.m_Initialized)
 			break;
-		if(!LineMatchesSearch(Line))
-			continue;
 		if(Now > Line.m_Time + 16 * time_freq() && !m_PrevShowChat)
 			break;
 
@@ -1460,6 +1519,14 @@ void CChat::OnRender()
 		// cut off if msgs waste too much space
 		if(y < HeightLimit)
 			break;
+
+		if(m_RenderedLineCount < MAX_LINES)
+		{
+			m_aRenderedLineIndex[m_RenderedLineCount] = LineIndex;
+			m_aRenderedLineTop[m_RenderedLineCount] = y;
+			m_aRenderedLineBottom[m_RenderedLineCount] = y + Line.m_aYOffset[OffsetType];
+			++m_RenderedLineCount;
+		}
 
 		float Blend = Now > Line.m_Time + 14 * time_freq() && !m_PrevShowChat ? 1.0f - (Now - Line.m_Time - 14 * time_freq()) / (2.0f * time_freq()) : 1.0f;
 
