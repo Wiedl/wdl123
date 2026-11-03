@@ -194,6 +194,7 @@ void CChat::Reset()
 
 void CChat::OnRelease()
 {
+	DisableMode();
 	m_Show = false;
 }
 
@@ -289,9 +290,15 @@ void CChat::OnInit()
 
 bool CChat::OnInput(const IInput::CEvent &Event)
 {
-	// Right-click context actions must also work while chat input is closed.
-	if(m_Mode == MODE_NONE && !((Event.m_Flags & IInput::FLAG_PRESS) && Event.m_Key == KEY_MOUSE_2))
-		return false;
+	// Only intercept right-clicks when they target an actual chat message.
+	if(m_Mode == MODE_NONE)
+	{
+		if(!(Event.m_Flags & IInput::FLAG_PRESS) || Event.m_Key != KEY_MOUSE_2)
+			return false;
+		const int LineIndex = GetHoveredLine();
+		if(LineIndex < 0)
+			return false;
+	}
 	if(Event.m_Flags & IInput::FLAG_PRESS && Event.m_Key == KEY_MOUSE_WHEEL_UP)
 	{
 		int MaxScrollOffset = 0;
@@ -337,7 +344,7 @@ bool CChat::OnInput(const IInput::CEvent &Event)
 			CopyLineToClipboard(Line);
 			return true;
 		}
-		return true;
+		return false;
 	}
 	else if(Event.m_Flags & IInput::FLAG_PRESS && Event.m_Key == KEY_ESCAPE)
 	{
@@ -644,11 +651,11 @@ void CChat::DisableMode()
 		m_Input.Deactivate();
 		m_Show = m_ShowBeforeInput;
 		m_ScrollOffset = 0;
-		if(m_MouseModeActive)
-		{
-			Input()->MouseModeRelative();
-			m_MouseModeActive = false;
-		}
+	}
+	if(m_MouseModeActive)
+	{
+		Input()->MouseModeRelative();
+		m_MouseModeActive = false;
 	}
 }
 
@@ -1656,21 +1663,7 @@ void CChat::OnRender()
 		}
 	}
 
-	// Interactive chat-history scrollbar. 0 follows the newest message; 1 shows the oldest.
-	int MaxScrollOffset = 0;
-	while(MaxScrollOffset < MAX_LINES - 1 && m_aLines[(m_CurrentLine - MaxScrollOffset - 1 + MAX_LINES) % MAX_LINES].m_Initialized)
-		++MaxScrollOffset;
-	if(MaxScrollOffset > 0 && m_Mode != MODE_NONE)
-	{
-		// Keep the scrollbar compact and centered beside the chat history.
-		constexpr float ScrollbarHeight = 105.0f;
-		// A slim, rounded scrollbar matching the browser-style reference.
-		CUIRect Scrollbar = {5.0f + g_Config.m_ClChatWidth + 7.0f, HeightLimit + std::max(0.0f, (300.0f - HeightLimit - 30.0f - ScrollbarHeight) / 2.0f), 18.0f, ScrollbarHeight};
-		const float Current = (float)m_ScrollOffset / MaxScrollOffset;
-		const float NewValue = Ui()->DoScrollbarV(&m_ScrollOffset, &Scrollbar, Current);
-		if(NewValue != Current)
-			m_ScrollOffset = std::clamp((int)std::round(NewValue * MaxScrollOffset), 0, MaxScrollOffset);
-	}
+
 }
 
 void CChat::EnsureCoherentFontSize() const
