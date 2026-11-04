@@ -187,10 +187,11 @@ void CMenus::RenderSettingsWcl(CUIRect MainView)
 	DoButton_CheckBoxAutoVMarginAndSet(&s_WclWorldId, Localize("Show map and game world"), &g_Config.m_ClWclShowWorld, &MainView, 20.0f);
 	DoButton_CheckBoxAutoVMarginAndSet(&s_WclPlayersId, Localize("Show other players"), &g_Config.m_ClWclShowPlayers, &MainView, 20.0f);
 	DoButton_CheckBoxAutoVMarginAndSet(&s_WclExtendedRangeId, Localize("Full-map tracking range"), &g_Config.m_ClWclExtendedRange, &MainView, 20.0f);
-	Ui()->DoLabel(&MainView, Localize("Target player client ID (-1: automatic)"), 14.0f, TEXTALIGN_TL);
+	Ui()->DoLabel(&MainView, Localize("Target player nickname (empty: automatic)"), 14.0f, TEXTALIGN_TL);
 	MainView.HSplitTop(22.0f, nullptr, &MainView);
 	MainView.HSplitTop(22.0f, &Slider, &MainView);
-	DoSliderWithScaledValue(&g_Config.m_ClWclPlayerId, &g_Config.m_ClWclPlayerId, &Slider, "Player ID", -1, 63, 1, &CUi::ms_LinearScrollbarScale);
+	static CLineInput s_WclTargetNameInput(g_Config.m_ClWclPlayerName, sizeof(g_Config.m_ClWclPlayerName));
+	Ui()->DoEditBox(&s_WclTargetNameInput, &Slider, 12.0f);
 	Ui()->DoLabel(&MainView, Localize("Window size"), 14.0f, TEXTALIGN_TL);
 	MainView.HSplitTop(22.0f, nullptr, &MainView);
 	MainView.HSplitTop(22.0f, &Slider, &MainView);
