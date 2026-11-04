@@ -27,6 +27,278 @@
 
 #include <cmath>
 
+
+void CHud::OnConsoleInit()
+{
+	Console()->Register("hud_editor", "", CFGFLAG_CLIENT, ConHudEditor, this, "Toggle the in-game HUD editor");
+	Console()->Register("hud_editor_reset", "", CFGFLAG_CLIENT, ConHudEditorReset, this, "Reset all HUD editor positions and scales");
+}
+
+void CHud::ConHudEditor(IConsole::IResult *pResult, void *pUserData)
+{
+	CHud *pSelf = static_cast<CHud *>(pUserData);
+	pSelf->m_HudEditorActive = !pSelf->m_HudEditorActive;
+	pSelf->m_HudEditorSelected = -1;
+}
+
+void CHud::ConHudEditorReset(IConsole::IResult *pResult, void *pUserData)
+{
+	g_Config.m_ClHudStatusPosX = 0;
+	g_Config.m_ClHudStatusPosY = 0;
+	g_Config.m_ClHudStatusScale = 1000;
+	g_Config.m_ClHudTimerPosX = 0;
+	g_Config.m_ClHudTimerPosY = 0;
+	g_Config.m_ClHudTimerScale = 1000;
+	g_Config.m_ClHudRightPosX = 0;
+	g_Config.m_ClHudRightPosY = 0;
+	g_Config.m_ClHudRightScale = 1000;
+	g_Config.m_ClHudSpectatorPosX = 0;
+	g_Config.m_ClHudSpectatorPosY = 0;
+	g_Config.m_ClHudSpectatorScale = 1000;
+
+	CHud *pSelf = static_cast<CHud *>(pUserData);
+	pSelf->m_HudEditorSelected = -1;
+}
+
+void CHud::GetHudEditorBaseRect(int Element, vec2 &Pos, vec2 &Size) const
+{
+	switch(Element)
+	{
+	case HUD_EDITOR_STATUS:
+		Pos = vec2(0.0f, 0.0f);
+		Size = vec2(160.0f, 175.0f);
+		break;
+	case HUD_EDITOR_TIMER:
+		Pos = vec2(m_Width / 2.0f - 70.0f, 0.0f);
+		Size = vec2(140.0f, 90.0f);
+		break;
+	case HUD_EDITOR_RIGHT:
+		Pos = vec2(m_Width - 135.0f, 75.0f);
+		Size = vec2(135.0f, 225.0f);
+		break;
+	case HUD_EDITOR_SPECTATOR:
+		Pos = vec2(m_Width - 190.0f, m_Height - 35.0f);
+		Size = vec2(190.0f, 35.0f);
+		break;
+	default:
+		Pos = vec2(0.0f, 0.0f);
+		Size = vec2(0.0f, 0.0f);
+		break;
+	}
+}
+
+vec2 CHud::GetHudEditorOffset(int Element) const
+{
+	switch(Element)
+	{
+	case HUD_EDITOR_STATUS:
+		return vec2(m_Width * g_Config.m_ClHudStatusPosX / 10000.0f, m_Height * g_Config.m_ClHudStatusPosY / 10000.0f);
+	case HUD_EDITOR_TIMER:
+		return vec2(m_Width * g_Config.m_ClHudTimerPosX / 10000.0f, m_Height * g_Config.m_ClHudTimerPosY / 10000.0f);
+	case HUD_EDITOR_RIGHT:
+		return vec2(m_Width * g_Config.m_ClHudRightPosX / 10000.0f, m_Height * g_Config.m_ClHudRightPosY / 10000.0f);
+	case HUD_EDITOR_SPECTATOR:
+		return vec2(m_Width * g_Config.m_ClHudSpectatorPosX / 10000.0f, m_Height * g_Config.m_ClHudSpectatorPosY / 10000.0f);
+	default:
+		return vec2(0.0f, 0.0f);
+	}
+}
+
+float CHud::GetHudEditorScale(int Element) const
+{
+	switch(Element)
+	{
+	case HUD_EDITOR_STATUS: return g_Config.m_ClHudStatusScale / 1000.0f;
+	case HUD_EDITOR_TIMER: return g_Config.m_ClHudTimerScale / 1000.0f;
+	case HUD_EDITOR_RIGHT: return g_Config.m_ClHudRightScale / 1000.0f;
+	case HUD_EDITOR_SPECTATOR: return g_Config.m_ClHudSpectatorScale / 1000.0f;
+	default: return 1.0f;
+	}
+}
+
+void CHud::GetHudEditorRect(int Element, vec2 &Pos, vec2 &Size) const
+{
+	GetHudEditorBaseRect(Element, Pos, Size);
+	const vec2 Center = Pos + Size * 0.5f;
+	const vec2 Offset = GetHudEditorOffset(Element);
+	const float Scale = GetHudEditorScale(Element);
+	Pos = Center + Offset + (Pos - Center) * Scale;
+	Size *= Scale;
+}
+
+int CHud::GetHudEditorElementAt(vec2 Position) const
+{
+	for(int Element = HUD_EDITOR_NUM_ELEMENTS - 1; Element >= 0; --Element)
+	{
+		vec2 Pos, Size;
+		GetHudEditorRect(Element, Pos, Size);
+		if(Position.x >= Pos.x && Position.x <= Pos.x + Size.x &&
+			Position.y >= Pos.y && Position.y <= Pos.y + Size.y)
+			return Element;
+	}
+	return -1;
+}
+
+void CHud::MapScreenWithHudEditorOffset(int Element)
+{
+	vec2 Pos, Size;
+	GetHudEditorBaseRect(Element, Pos, Size);
+	const vec2 Center = Pos + Size * 0.5f;
+	const vec2 Offset = GetHudEditorOffset(Element);
+	const float Scale = GetHudEditorScale(Element);
+	const float Left = Center.x - (Center.x + Offset.x) / Scale;
+	const float Top = Center.y - (Center.y + Offset.y) / Scale;
+	Graphics()->MapScreen(CScreenRect(Left, Top, m_Width / Scale, m_Height / Scale));
+}
+
+void CHud::UpdateHudEditorOffset(int Element, float DeltaX, float DeltaY)
+{
+	const int OffsetX = (int)std::round(DeltaX / m_Width * 10000.0f);
+	const int OffsetY = (int)std::round(DeltaY / m_Height * 10000.0f);
+	switch(Element)
+	{
+	case HUD_EDITOR_STATUS:
+		g_Config.m_ClHudStatusPosX = std::clamp(g_Config.m_ClHudStatusPosX + OffsetX, -10000, 10000);
+		g_Config.m_ClHudStatusPosY = std::clamp(g_Config.m_ClHudStatusPosY + OffsetY, -10000, 10000);
+		break;
+	case HUD_EDITOR_TIMER:
+		g_Config.m_ClHudTimerPosX = std::clamp(g_Config.m_ClHudTimerPosX + OffsetX, -10000, 10000);
+		g_Config.m_ClHudTimerPosY = std::clamp(g_Config.m_ClHudTimerPosY + OffsetY, -10000, 10000);
+		break;
+	case HUD_EDITOR_RIGHT:
+		g_Config.m_ClHudRightPosX = std::clamp(g_Config.m_ClHudRightPosX + OffsetX, -10000, 10000);
+		g_Config.m_ClHudRightPosY = std::clamp(g_Config.m_ClHudRightPosY + OffsetY, -10000, 10000);
+		break;
+	case HUD_EDITOR_SPECTATOR:
+		g_Config.m_ClHudSpectatorPosX = std::clamp(g_Config.m_ClHudSpectatorPosX + OffsetX, -10000, 10000);
+		g_Config.m_ClHudSpectatorPosY = std::clamp(g_Config.m_ClHudSpectatorPosY + OffsetY, -10000, 10000);
+		break;
+	}
+}
+
+void CHud::ChangeHudEditorScale(int Element, int Delta)
+{
+	switch(Element)
+	{
+	case HUD_EDITOR_STATUS:
+		g_Config.m_ClHudStatusScale = std::clamp(g_Config.m_ClHudStatusScale + Delta, 500, 2000);
+		break;
+	case HUD_EDITOR_TIMER:
+		g_Config.m_ClHudTimerScale = std::clamp(g_Config.m_ClHudTimerScale + Delta, 500, 2000);
+		break;
+	case HUD_EDITOR_RIGHT:
+		g_Config.m_ClHudRightScale = std::clamp(g_Config.m_ClHudRightScale + Delta, 500, 2000);
+		break;
+	case HUD_EDITOR_SPECTATOR:
+		g_Config.m_ClHudSpectatorScale = std::clamp(g_Config.m_ClHudSpectatorScale + Delta, 500, 2000);
+		break;
+	}
+}
+
+bool CHud::OnCursorMove(float x, float y, IInput::ECursorType CursorType)
+{
+	if(!m_HudEditorActive)
+		return false;
+
+	Ui()->ConvertMouseMove(&x, &y, CursorType);
+	Ui()->OnCursorMove(x, y);
+	if(m_HudEditorSelected >= 0 && Graphics()->WindowHeight() > 0)
+	{
+		const float HudUnitsPerPixel = 300.0f / Graphics()->WindowHeight();
+		UpdateHudEditorOffset(m_HudEditorSelected, x * HudUnitsPerPixel, y * HudUnitsPerPixel);
+	}
+	return true;
+}
+
+bool CHud::OnInput(const IInput::CEvent &Event)
+{
+	if(!m_HudEditorActive)
+		return false;
+
+	if(Event.m_Key == KEY_ESCAPE && (Event.m_Flags & IInput::FLAG_PRESS))
+	{
+		m_HudEditorActive = false;
+		m_HudEditorSelected = -1;
+		return true;
+	}
+
+	if(Event.m_Key == KEY_MOUSE_1)
+	{
+		if(Event.m_Flags & IInput::FLAG_PRESS)
+		{
+			if(Graphics()->WindowHeight() > 0)
+			{
+				const vec2 Mouse = Ui()->UpdatedMousePos() * (300.0f / Graphics()->WindowHeight());
+				m_HudEditorSelected = GetHudEditorElementAt(Mouse);
+			}
+		}
+		else if(Event.m_Flags & IInput::FLAG_RELEASE)
+		{
+			m_HudEditorSelected = -1;
+		}
+		return true;
+	}
+
+	if((Event.m_Flags & IInput::FLAG_PRESS) &&
+		(Event.m_Key == KEY_MOUSE_WHEEL_UP || Event.m_Key == KEY_MOUSE_WHEEL_DOWN) &&
+		Graphics()->WindowHeight() > 0)
+	{
+		const vec2 Mouse = Ui()->UpdatedMousePos() * (300.0f / Graphics()->WindowHeight());
+		const int Element = GetHudEditorElementAt(Mouse);
+		if(Element >= 0)
+		{
+			m_HudEditorSelected = Element;
+			ChangeHudEditorScale(Element, Event.m_Key == KEY_MOUSE_WHEEL_UP ? 50 : -50);
+		}
+		return true;
+	}
+
+	return true;
+}
+
+void CHud::RenderHudEditor()
+{
+	// A subtle 20-unit grid makes it easier to align HUD blocks.
+	const ColorRGBA GridColor(1.0f, 1.0f, 1.0f, 0.055f);
+	for(float x = 0.0f; x < m_Width; x += 20.0f)
+		Graphics()->DrawRect(x, 0.0f, 0.35f, m_Height, GridColor, IGraphics::CORNER_ALL, 0.0f);
+	for(float y = 0.0f; y < m_Height; y += 20.0f)
+		Graphics()->DrawRect(0.0f, y, m_Width, 0.35f, GridColor, IGraphics::CORNER_ALL, 0.0f);
+
+	const char *apLabels[HUD_EDITOR_NUM_ELEMENTS] = {
+		Localize("Player status"),
+		Localize("Timers"),
+		Localize("Right-side widgets"),
+		Localize("Spectator bar")};
+
+	for(int Element = 0; Element < HUD_EDITOR_NUM_ELEMENTS; ++Element)
+	{
+		vec2 Pos, Size;
+		GetHudEditorRect(Element, Pos, Size);
+		const bool Selected = Element == m_HudEditorSelected;
+		const ColorRGBA Fill = Selected ? ColorRGBA(0.15f, 0.65f, 1.0f, 0.20f) : ColorRGBA(1.0f, 1.0f, 1.0f, 0.08f);
+		const ColorRGBA Border = Selected ? ColorRGBA(0.15f, 0.75f, 1.0f, 0.95f) : ColorRGBA(1.0f, 1.0f, 1.0f, 0.55f);
+		Graphics()->DrawRect(Pos.x, Pos.y, Size.x, Size.y, Fill, IGraphics::CORNER_ALL, 2.0f);
+		Graphics()->DrawRect(Pos.x, Pos.y, Size.x, 0.8f, Border, IGraphics::CORNER_ALL, 0.0f);
+		Graphics()->DrawRect(Pos.x, Pos.y + Size.y - 0.8f, Size.x, 0.8f, Border, IGraphics::CORNER_ALL, 0.0f);
+		Graphics()->DrawRect(Pos.x, Pos.y, 0.8f, Size.y, Border, IGraphics::CORNER_ALL, 0.0f);
+		Graphics()->DrawRect(Pos.x + Size.x - 0.8f, Pos.y, 0.8f, Size.y, Border, IGraphics::CORNER_ALL, 0.0f);
+
+		char aLabel[96];
+		str_format(aLabel, sizeof(aLabel), "%s  %d%%", apLabels[Element], (int)std::round(GetHudEditorScale(Element) * 100.0f));
+		TextRender()->TextColor(Border);
+		TextRender()->Text(Pos.x + 3.0f, Pos.y + 3.0f, 6.0f, aLabel, -1.0f);
+	}
+	TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
+	TextRender()->Text(5.0f, m_Height - 12.0f, 6.0f, Localize("HUD EDITOR: drag to move, mouse wheel to resize, ESC to close"), -1.0f);
+
+	if(Graphics()->WindowHeight() > 0)
+	{
+		const vec2 Mouse = Ui()->UpdatedMousePos() * (300.0f / Graphics()->WindowHeight());
+		Graphics()->DrawRect(Mouse.x - 1.0f, Mouse.y - 1.0f, 2.0f, 2.0f, ColorRGBA(1.0f, 1.0f, 1.0f, 0.9f), IGraphics::CORNER_ALL, 1.0f);
+	}
+}
+
 CHud::CHud()
 {
 	m_FPSTextContainerIndex.Reset();
@@ -75,6 +347,8 @@ void CHud::OnWindowResize()
 
 void CHud::OnReset()
 {
+	m_HudEditorActive = false;
+	m_HudEditorSelected = -1;
 	m_TimeCpDiff = 0.0f;
 	m_DDRaceTime = 0;
 	m_FinishTimeLastReceivedTick = 0;
@@ -2000,44 +2274,55 @@ void CHud::OnRender()
 	{
 		if(GameClient()->m_Snap.m_pLocalCharacter && !GameClient()->m_Snap.m_SpecInfo.m_Active && !(GameClient()->m_Snap.m_pGameInfoObj->m_GameStateFlags & GAMESTATEFLAG_GAMEOVER))
 		{
+			MapScreenWithHudEditorOffset(HUD_EDITOR_STATUS);
 			if(g_Config.m_ClShowhudHealthAmmo)
-			{
 				RenderAmmoHealthAndArmor(GameClient()->m_Snap.m_pLocalCharacter);
-			}
 			if(GameClient()->m_Snap.m_aCharacters[GameClient()->m_Snap.m_LocalClientId].m_HasExtendedData && g_Config.m_ClShowhudDDRace && GameClient()->m_GameInfo.m_HudDDRace)
-			{
 				RenderPlayerState(GameClient()->m_Snap.m_LocalClientId);
-			}
+			RenderDDRaceEffects();
+			Graphics()->MapScreenToSize(m_Width, m_Height);
+
+			MapScreenWithHudEditorOffset(HUD_EDITOR_RIGHT);
 			RenderSpectatorCount();
 			RenderMovementInformation();
-			RenderDDRaceEffects();
+			Graphics()->MapScreenToSize(m_Width, m_Height);
 		}
 		else if(GameClient()->m_Snap.m_SpecInfo.m_Active)
 		{
-			int SpectatorId = GameClient()->m_Snap.m_SpecInfo.m_SpectatorId;
+			const int SpectatorId = GameClient()->m_Snap.m_SpecInfo.m_SpectatorId;
+			MapScreenWithHudEditorOffset(HUD_EDITOR_STATUS);
 			if(SpectatorId != SPEC_FREEVIEW && g_Config.m_ClShowhudHealthAmmo)
-			{
 				RenderAmmoHealthAndArmor(&GameClient()->m_Snap.m_aCharacters[SpectatorId].m_Cur);
-			}
 			if(SpectatorId != SPEC_FREEVIEW &&
 				GameClient()->m_Snap.m_aCharacters[SpectatorId].m_HasExtendedData &&
 				g_Config.m_ClShowhudDDRace &&
 				GameClient()->m_GameInfo.m_HudDDRace)
-			{
 				RenderPlayerState(SpectatorId);
-			}
+			Graphics()->MapScreenToSize(m_Width, m_Height);
+
+			MapScreenWithHudEditorOffset(HUD_EDITOR_RIGHT);
 			RenderMovementInformation();
+			Graphics()->MapScreenToSize(m_Width, m_Height);
+
+			MapScreenWithHudEditorOffset(HUD_EDITOR_SPECTATOR);
 			RenderSpectatorHud();
+			Graphics()->MapScreenToSize(m_Width, m_Height);
 		}
 
+		MapScreenWithHudEditorOffset(HUD_EDITOR_TIMER);
 		if(g_Config.m_ClShowhudTimer)
 			RenderGameTimer();
 		RenderPauseNotification();
 		RenderSuddenDeath();
+		RenderWarmupTimer();
+		Graphics()->MapScreenToSize(m_Width, m_Height);
+
+		MapScreenWithHudEditorOffset(HUD_EDITOR_RIGHT);
 		if(g_Config.m_ClShowhudScore)
 			RenderScoreHud();
 		RenderDummyActions();
-		RenderWarmupTimer();
+		Graphics()->MapScreenToSize(m_Width, m_Height);
+
 		RenderTextInfo();
 		GameClient()->m_TClient.RenderCenterLines();
 		RenderLocalTime((m_Width / 7) * 3);
@@ -2048,7 +2333,11 @@ void CHud::OnRender()
 		if(g_Config.m_ClShowRecord)
 			RenderRecord();
 	}
-	RenderCursor();
+
+	if(m_HudEditorActive)
+		RenderHudEditor();
+	else
+		RenderCursor();
 }
 
 void CHud::OnMessage(int MsgType, void *pRawMsg)
