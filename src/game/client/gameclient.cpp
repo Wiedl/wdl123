@@ -948,9 +948,6 @@ void CGameClient::RenderWcl()
 		{
 			if(!IsValidTarget(ClientId))
 				continue;
-			if(IsTeamPlay() && IsOtherTeam(ClientId))
-				continue;
-
 			float Distance = (float)ClientId;
 			if(HasLocalPosition)
 			{
