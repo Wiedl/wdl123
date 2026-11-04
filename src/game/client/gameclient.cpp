@@ -455,6 +455,7 @@ void CGameClient::OnInit()
 
 	// Load the WCL frame atlas as a PNG texture.
 	m_WclFrameTexture = Graphics()->LoadTexture("wcl_frames/wcl_frames.png", IStorage::TYPE_ALL);
+	m_WclCornerMaskTexture = Graphics()->LoadTexture("wcl_frames/wcl_corner_mask.png", IStorage::TYPE_ALL);
 
 	m_GameWorld.Init(Collision(), m_aTuningList, &m_MapBugs);
 	OnReset();
@@ -1147,37 +1148,25 @@ void CGameClient::RenderWcl()
 	Graphics()->TextureClear();
 	Graphics()->BlendNormal();
 
-	// Cover only the parts outside the rounded PiP screen shape. These masks are
-	// drawn after the world, independently of whether the PNG frame is enabled.
-	if(CornerRadius > 0)
+	// Use four pre-rasterized PNG corner masks instead of generating 256
+	// small quads per frame. This keeps the rounding cost constant and tiny.
+	if(CornerRadius > 0 && m_WclCornerMaskTexture.IsValid())
 	{
 		const float Radius = std::min((float)CornerRadius, std::min(Width, Height) * 0.5f);
-		constexpr int CornerMaskSteps = 64;
-		const float Step = Radius / CornerMaskSteps;
-		const ColorRGBA MaskColor(0.0f, 0.0f, 0.0f, 1.0f);
+		Graphics()->TextureSet(m_WclCornerMaskTexture);
+		Graphics()->SetColor(ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f));
 		Graphics()->QuadsBegin();
-		for(int i = 0; i < CornerMaskSteps; ++i)
-		{
-			const float Offset = (i + 0.5f) * Step;
-			const float TopDistance = Radius - Offset;
-			const float TopMaskWidth = Radius - std::sqrt(std::max(0.0f, Radius * Radius - TopDistance * TopDistance));
-			const float BottomMaskWidth = Radius - std::sqrt(std::max(0.0f, Radius * Radius - Offset * Offset));
-			const float TopY = Y + i * Step;
-			const float BottomY = Y + Height - Radius + i * Step;
-
-			auto DrawMask = [&](float MaskX, float MaskY, float MaskWidth) {
-				if(MaskWidth <= 0.0f)
-					return;
-				Graphics()->SetColor(MaskColor);
-				IGraphics::CQuadItem MaskQuad(MaskX, MaskY, MaskWidth, Step);
-				Graphics()->QuadsDrawTL(&MaskQuad, 1);
-			};
-			DrawMask(X, TopY, TopMaskWidth);
-			DrawMask(X + Width - TopMaskWidth, TopY, TopMaskWidth);
-			DrawMask(X, BottomY, BottomMaskWidth);
-			DrawMask(X + Width - BottomMaskWidth, BottomY, BottomMaskWidth);
-		}
+		auto DrawCornerMask = [&](float MaskX, float MaskY, float U0, float V0, float U1, float V1) {
+			Graphics()->QuadsSetSubsetFree(U0, V0, U1, V0, U1, V1, U0, V1);
+			IGraphics::CQuadItem MaskQuad(MaskX, MaskY, Radius, Radius);
+			Graphics()->QuadsDrawTL(&MaskQuad, 1);
+		};
+		DrawCornerMask(X, Y, 0.0f, 0.0f, 1.0f, 1.0f);
+		DrawCornerMask(X + Width - Radius, Y, 1.0f, 0.0f, 0.0f, 1.0f);
+		DrawCornerMask(X, Y + Height - Radius, 0.0f, 1.0f, 1.0f, 0.0f);
+		DrawCornerMask(X + Width - Radius, Y + Height - Radius, 1.0f, 1.0f, 0.0f, 0.0f);
 		Graphics()->QuadsEnd();
+		Graphics()->TextureClear();
 	}
 
 	// Draw the PNG frame as a 9-slice. Fixed-size corners stay intact while
@@ -1629,6 +1618,8 @@ void CGameClient::OnShutdown()
 
 	if(m_WclFrameTexture.IsValid())
 		Graphics()->UnloadTexture(&m_WclFrameTexture);
+	if(m_WclCornerMaskTexture.IsValid())
+		Graphics()->UnloadTexture(&m_WclCornerMaskTexture);
 
 	m_LocalServer.KillServer();
 }
