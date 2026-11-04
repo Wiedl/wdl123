@@ -362,12 +362,15 @@ int CControls::SnapInput(int *pData)
 	vec2 WclNetworkTarget;
 	if(GameClient()->WclGetNetworkTargetPosition(WclNetworkTarget))
 	{
+		if(Client()->ServerCapAnyPlayerFlag())
+			m_aInputData[g_Config.m_ClDummy].m_PlayerFlags |= PLAYERFLAG_SPEC_CAM;
 		m_aInputData[g_Config.m_ClDummy].m_TargetX = (int)WclNetworkTarget.x;
 		m_aInputData[g_Config.m_ClDummy].m_TargetY = (int)WclNetworkTarget.y;
 		if(!m_aInputData[g_Config.m_ClDummy].m_TargetX && !m_aInputData[g_Config.m_ClDummy].m_TargetY)
 			m_aInputData[g_Config.m_ClDummy].m_TargetX = 1;
 
 		Send = Send ||
+			m_aInputData[g_Config.m_ClDummy].m_PlayerFlags != m_aLastData[g_Config.m_ClDummy].m_PlayerFlags ||
 			m_aInputData[g_Config.m_ClDummy].m_TargetX != m_aLastData[g_Config.m_ClDummy].m_TargetX ||
 			m_aInputData[g_Config.m_ClDummy].m_TargetY != m_aLastData[g_Config.m_ClDummy].m_TargetY;
 	}
