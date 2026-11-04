@@ -176,22 +176,28 @@ void CMenus::RenderSettings(CUIRect MainView)
 
 void CMenus::RenderSettingsWcl(CUIRect MainView)
 {
-	CUIRect Slider, TabBar, LeftTab, RightTab;
+	CUIRect Slider, TabBar, LeftTab, MiddleTab, RightTab;
 	static int s_WclSettingsTab = 0;
 	static CButtonContainer s_WclPiPTab;
 	static CButtonContainer s_WclChatTab;
+	static CButtonContainer s_WclHudEditorTab;
 
-	// Keep PiP and chat options on separate pages within the WCL settings.
+	// WCL settings are split into PiP, chat and HUD editor pages.
 	MainView.HSplitTop(28.0f, &TabBar, &MainView);
 	LeftTab = TabBar;
+	MiddleTab = TabBar;
 	RightTab = TabBar;
-	LeftTab.w = (TabBar.w - 5.0f) / 2.0f;
-	RightTab.x += LeftTab.w + 5.0f;
+	LeftTab.w = (TabBar.w - 10.0f) / 3.0f;
+	MiddleTab.x += LeftTab.w + 5.0f;
+	MiddleTab.w = LeftTab.w;
+	RightTab.x += 2.0f * (LeftTab.w + 5.0f);
 	RightTab.w = LeftTab.w;
 	if(DoButton_MenuTab(&s_WclPiPTab, Localize("Picture in Picture"), s_WclSettingsTab == 0, &LeftTab, IGraphics::CORNER_ALL))
 		s_WclSettingsTab = 0;
-	if(DoButton_MenuTab(&s_WclChatTab, Localize("Chat"), s_WclSettingsTab == 1, &RightTab, IGraphics::CORNER_ALL))
+	if(DoButton_MenuTab(&s_WclChatTab, Localize("Chat"), s_WclSettingsTab == 1, &MiddleTab, IGraphics::CORNER_ALL))
 		s_WclSettingsTab = 1;
+	if(DoButton_MenuTab(&s_WclHudEditorTab, Localize("HUD Editor"), s_WclSettingsTab == 2, &RightTab, IGraphics::CORNER_ALL))
+		s_WclSettingsTab = 2;
 	MainView.HSplitTop(8.0f, nullptr, &MainView);
 
 	if(s_WclSettingsTab == 1)
@@ -209,6 +215,57 @@ void CMenus::RenderSettingsWcl(CUIRect MainView)
 		{
 			GameClient()->m_Chat.RebuildChat();
 		}
+		return;
+	}
+	if(s_WclSettingsTab == 2)
+	{
+		Ui()->DoLabel(&MainView, Localize("Arrange and resize the in-game HUD groups."), 14.0f, TEXTALIGN_TL);
+		MainView.HSplitTop(8.0f, nullptr, &MainView);
+
+		CUIRect ButtonRow, OpenEditorButton, ResetEditorButton;
+		MainView.HSplitTop(28.0f, &ButtonRow, &MainView);
+		ButtonRow.VSplitLeft((ButtonRow.w - 8.0f) / 2.0f, &OpenEditorButton, &ResetEditorButton);
+		ResetEditorButton.x += 8.0f;
+		ResetEditorButton.w -= 8.0f;
+		static CButtonContainer s_WclOpenHudEditor;
+		static CButtonContainer s_WclResetHudEditor;
+		const bool CanOpenEditor = Client()->State() == IClient::STATE_ONLINE || Client()->State() == IClient::STATE_DEMOPLAYBACK;
+		if(DoButton_Menu(&s_WclOpenHudEditor, Localize("Open HUD editor"), 0, &OpenEditorButton) && CanOpenEditor)
+		{
+			GameClient()->m_Hud.SetHudEditorActive(true);
+			GameClient()->m_Menus.SetActive(false);
+		}
+		if(DoButton_Menu(&s_WclResetHudEditor, Localize("Reset layout"), 0, &ResetEditorButton))
+			GameClient()->m_Hud.ResetHudEditorLayout();
+
+		if(!CanOpenEditor)
+		{
+			MainView.HSplitTop(20.0f, &ButtonRow, &MainView);
+			Ui()->DoLabel(&ButtonRow, Localize("Connect to a server or open a demo to edit the HUD."), 12.0f, TEXTALIGN_TL);
+		}
+		else
+		{
+			MainView.HSplitTop(20.0f, &ButtonRow, &MainView);
+			Ui()->DoLabel(&ButtonRow, Localize("Drag a group to move it; use the mouse wheel to resize."), 12.0f, TEXTALIGN_TL);
+		}
+
+		auto DoHudEditorGroup = [&](const char *pTitle, int *pPosX, int *pPosY, int *pScale) {
+			CUIRect GroupTitle;
+			MainView.HSplitTop(20.0f, &GroupTitle, &MainView);
+			Ui()->DoLabel(&GroupTitle, pTitle, 14.0f, TEXTALIGN_TL);
+			MainView.HSplitTop(22.0f, &Slider, &MainView);
+			DoSliderWithScaledValue(pPosX, pPosX, &Slider, Localize("Horizontal offset (%)"), -10000, 10000, 100, &CUi::ms_LinearScrollbarScale);
+			MainView.HSplitTop(22.0f, &Slider, &MainView);
+			DoSliderWithScaledValue(pPosY, pPosY, &Slider, Localize("Vertical offset (%)"), -10000, 10000, 100, &CUi::ms_LinearScrollbarScale);
+			MainView.HSplitTop(22.0f, &Slider, &MainView);
+			DoSliderWithScaledValue(pScale, pScale, &Slider, Localize("Scale (50–200%)"), 500, 2000, 50, &CUi::ms_LinearScrollbarScale);
+			MainView.HSplitTop(4.0f, nullptr, &MainView);
+		};
+
+		DoHudEditorGroup(Localize("Player status"), &g_Config.m_ClHudStatusPosX, &g_Config.m_ClHudStatusPosY, &g_Config.m_ClHudStatusScale);
+		DoHudEditorGroup(Localize("Timers"), &g_Config.m_ClHudTimerPosX, &g_Config.m_ClHudTimerPosY, &g_Config.m_ClHudTimerScale);
+		DoHudEditorGroup(Localize("Right-side widgets"), &g_Config.m_ClHudRightPosX, &g_Config.m_ClHudRightPosY, &g_Config.m_ClHudRightScale);
+		DoHudEditorGroup(Localize("Spectator bar"), &g_Config.m_ClHudSpectatorPosX, &g_Config.m_ClHudSpectatorPosY, &g_Config.m_ClHudSpectatorScale);
 		return;
 	}
 	CUIRect Hint;
