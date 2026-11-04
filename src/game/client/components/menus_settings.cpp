@@ -187,11 +187,75 @@ void CMenus::RenderSettingsWcl(CUIRect MainView)
 	DoButton_CheckBoxAutoVMarginAndSet(&s_WclWorldId, Localize("Show map and game world"), &g_Config.m_ClWclShowWorld, &MainView, 20.0f);
 	DoButton_CheckBoxAutoVMarginAndSet(&s_WclPlayersId, Localize("Show other players"), &g_Config.m_ClWclShowPlayers, &MainView, 20.0f);
 	DoButton_CheckBoxAutoVMarginAndSet(&s_WclExtendedRangeId, Localize("Full-map tracking range"), &g_Config.m_ClWclExtendedRange, &MainView, 20.0f);
-	Ui()->DoLabel(&MainView, Localize("Target player nickname (empty: automatic)"), 14.0f, TEXTALIGN_TL);
+	Ui()->DoLabel(&MainView, Localize("Target player"), 14.0f, TEXTALIGN_TL);
 	MainView.HSplitTop(22.0f, nullptr, &MainView);
 	MainView.HSplitTop(22.0f, &Slider, &MainView);
-	static CLineInput s_WclTargetNameInput(g_Config.m_ClWclPlayerName, sizeof(g_Config.m_ClWclPlayerName));
-	Ui()->DoEditBox(&s_WclTargetNameInput, &Slider, 12.0f);
+
+	// Build the dropdown from the current server snapshot. The user sees names,
+	// while the selected client slot keeps players with the same IP distinct.
+	static CUi::SDropDownState s_WclTargetDropDown;
+	char aaPlayerNames[MAX_CLIENTS + 1][MAX_NAME_LENGTH + MAX_CLAN_LENGTH + 32];
+	const char *apPlayerNames[MAX_CLIENTS + 1];
+	int aPlayerIds[MAX_CLIENTS + 1];
+	int NumPlayers = 1;
+	str_copy(aaPlayerNames[0], Localize("Automatic (nearest player)"), sizeof(aaPlayerNames[0]));
+	apPlayerNames[0] = aaPlayerNames[0];
+	aPlayerIds[0] = -1;
+
+	int LocalClientId = GameClient()->m_Snap.m_LocalClientId;
+	if(!in_range(LocalClientId, MAX_CLIENTS - 1))
+		LocalClientId = GameClient()->m_aLocalIds[0];
+
+	for(int ClientId = 0; ClientId < MAX_CLIENTS; ++ClientId)
+	{
+		if(ClientId == LocalClientId || ClientId == GameClient()->m_aLocalIds[0] ||
+			ClientId == GameClient()->m_aLocalIds[1] || GameClient()->m_Snap.m_apPlayerInfos[ClientId] == nullptr)
+			continue;
+
+		const auto &Player = GameClient()->m_aClients[ClientId];
+		bool DuplicateName = false;
+		for(int OtherId = 0; OtherId < MAX_CLIENTS; ++OtherId)
+		{
+			if(OtherId != ClientId && GameClient()->m_Snap.m_apPlayerInfos[OtherId] != nullptr &&
+				str_comp(Player.m_aName, GameClient()->m_aClients[OtherId].m_aName) == 0)
+			{
+				DuplicateName = true;
+				break;
+			}
+		}
+
+		if(Player.m_aClan[0] != '\0')
+		{
+			if(DuplicateName)
+				str_format(aaPlayerNames[NumPlayers], sizeof(aaPlayerNames[NumPlayers]), "%s [%s] (#%d)", Player.m_aName, Player.m_aClan, ClientId);
+			else
+				str_format(aaPlayerNames[NumPlayers], sizeof(aaPlayerNames[NumPlayers]), "%s [%s]", Player.m_aName, Player.m_aClan);
+		}
+		else if(DuplicateName)
+			str_format(aaPlayerNames[NumPlayers], sizeof(aaPlayerNames[NumPlayers]), "%s (#%d)", Player.m_aName, ClientId);
+		else
+			str_copy(aaPlayerNames[NumPlayers], Player.m_aName, sizeof(aaPlayerNames[NumPlayers]));
+
+		apPlayerNames[NumPlayers] = aaPlayerNames[NumPlayers];
+		aPlayerIds[NumPlayers] = ClientId;
+		++NumPlayers;
+	}
+
+	int CurrentSelection = 0;
+	for(int i = 1; i < NumPlayers; ++i)
+	{
+		if(aPlayerIds[i] == g_Config.m_ClWclPlayerId)
+		{
+			CurrentSelection = i;
+			break;
+		}
+	}
+	if(g_Config.m_ClWclPlayerId >= 0 && CurrentSelection == 0)
+		g_Config.m_ClWclPlayerId = -1;
+
+	const int NewSelection = Ui()->DoDropDown(&Slider, CurrentSelection, apPlayerNames, NumPlayers, s_WclTargetDropDown);
+	if(NewSelection >= 0 && NewSelection < NumPlayers)
+		g_Config.m_ClWclPlayerId = aPlayerIds[NewSelection];
 	Ui()->DoLabel(&MainView, Localize("Window size"), 14.0f, TEXTALIGN_TL);
 	MainView.HSplitTop(22.0f, nullptr, &MainView);
 	MainView.HSplitTop(22.0f, &Slider, &MainView);
