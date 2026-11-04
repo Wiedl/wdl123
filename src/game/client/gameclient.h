@@ -675,7 +675,6 @@ public:
 	void OnConnected() override;
 	void OnRender() override;
 	// In paused free-camera mode, keep the server's network view centered on the WCL target.
-	bool WclGetNetworkTargetPosition(vec2 &Position) const;
 	void OnUpdate() override;
 	void OnDummyDisconnect() override;
 	virtual void OnRelease();
@@ -1039,6 +1038,8 @@ private:
 	CTuningParams *TuningList() { return m_aTuningList; }
 
 	float m_LastShowDistanceZoom;
+	int m_LastShowDistanceX = -1;
+	int m_LastShowDistanceY = -1;
 	float m_LastZoom;
 	float m_LastScreenAspect;
 	float m_LastDeadzone;
