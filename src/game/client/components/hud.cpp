@@ -51,9 +51,13 @@ void CHud::ConHudEditorReset(IConsole::IResult *pResult, void *pUserData)
 
 void CHud::SetHudEditorActive(bool Active)
 {
+	if(m_HudEditorActive && !Active)
+		ConfigManager()->Save();
+
 	m_HudEditorActive = Active;
 	m_HudEditorDragging = false;
 	m_HudEditorSelected = -1;
+	m_HudEditorDragStartMouse = vec2(0.0f, 0.0f);
 }
 
 void CHud::ResetHudEditorLayout()
@@ -167,25 +171,27 @@ void CHud::MapScreenWithHudEditorOffset(int Element)
 
 void CHud::UpdateHudEditorOffset(int Element, float DeltaX, float DeltaY)
 {
+	// Calculate from the drag origin instead of rounding every mouse event.
+	// This keeps small movements and slow drags from being discarded.
 	const int OffsetX = (int)std::round(DeltaX / m_Width * 100.0f);
 	const int OffsetY = (int)std::round(DeltaY / m_Height * 100.0f);
 	switch(Element)
 	{
 	case HUD_EDITOR_STATUS:
-		g_Config.m_ClHudStatusPosX = std::clamp(g_Config.m_ClHudStatusPosX + OffsetX, -100, 100);
-		g_Config.m_ClHudStatusPosY = std::clamp(g_Config.m_ClHudStatusPosY + OffsetY, -100, 100);
+		g_Config.m_ClHudStatusPosX = std::clamp(m_HudEditorDragStartOffsetX + OffsetX, -100, 100);
+		g_Config.m_ClHudStatusPosY = std::clamp(m_HudEditorDragStartOffsetY + OffsetY, -100, 100);
 		break;
 	case HUD_EDITOR_TIMER:
-		g_Config.m_ClHudTimerPosX = std::clamp(g_Config.m_ClHudTimerPosX + OffsetX, -100, 100);
-		g_Config.m_ClHudTimerPosY = std::clamp(g_Config.m_ClHudTimerPosY + OffsetY, -100, 100);
+		g_Config.m_ClHudTimerPosX = std::clamp(m_HudEditorDragStartOffsetX + OffsetX, -100, 100);
+		g_Config.m_ClHudTimerPosY = std::clamp(m_HudEditorDragStartOffsetY + OffsetY, -100, 100);
 		break;
 	case HUD_EDITOR_RIGHT:
-		g_Config.m_ClHudRightPosX = std::clamp(g_Config.m_ClHudRightPosX + OffsetX, -100, 100);
-		g_Config.m_ClHudRightPosY = std::clamp(g_Config.m_ClHudRightPosY + OffsetY, -100, 100);
+		g_Config.m_ClHudRightPosX = std::clamp(m_HudEditorDragStartOffsetX + OffsetX, -100, 100);
+		g_Config.m_ClHudRightPosY = std::clamp(m_HudEditorDragStartOffsetY + OffsetY, -100, 100);
 		break;
 	case HUD_EDITOR_SPECTATOR:
-		g_Config.m_ClHudSpectatorPosX = std::clamp(g_Config.m_ClHudSpectatorPosX + OffsetX, -100, 100);
-		g_Config.m_ClHudSpectatorPosY = std::clamp(g_Config.m_ClHudSpectatorPosY + OffsetY, -100, 100);
+		g_Config.m_ClHudSpectatorPosX = std::clamp(m_HudEditorDragStartOffsetX + OffsetX, -100, 100);
+		g_Config.m_ClHudSpectatorPosY = std::clamp(m_HudEditorDragStartOffsetY + OffsetY, -100, 100);
 		break;
 	}
 }
@@ -219,8 +225,10 @@ bool CHud::OnCursorMove(float x, float y, IInput::ECursorType CursorType)
 	// Moving the pointer only moves a HUD group while the left mouse button is held.
 	if(m_HudEditorDragging && m_HudEditorSelected >= 0 && Graphics()->WindowHeight() > 0)
 	{
-		const float HudUnitsPerPixel = 300.0f / Graphics()->WindowHeight();
-		UpdateHudEditorOffset(m_HudEditorSelected, x * HudUnitsPerPixel, y * HudUnitsPerPixel);
+		const vec2 Mouse = Ui()->UpdatedMousePos() * (300.0f / Graphics()->WindowHeight());
+		UpdateHudEditorOffset(m_HudEditorSelected,
+			Mouse.x - m_HudEditorDragStartMouse.x,
+			Mouse.y - m_HudEditorDragStartMouse.y);
 	}
 	return true;
 }
@@ -245,12 +253,35 @@ bool CHud::OnInput(const IInput::CEvent &Event)
 				const vec2 Mouse = Ui()->UpdatedMousePos() * (300.0f / Graphics()->WindowHeight());
 				m_HudEditorSelected = GetHudEditorElementAt(Mouse);
 				m_HudEditorDragging = m_HudEditorSelected >= 0;
+				m_HudEditorDragStartMouse = Mouse;
+				m_HudEditorDragStartOffsetX = 0;
+				m_HudEditorDragStartOffsetY = 0;
+				switch(m_HudEditorSelected)
+				{
+				case HUD_EDITOR_STATUS:
+					m_HudEditorDragStartOffsetX = g_Config.m_ClHudStatusPosX;
+					m_HudEditorDragStartOffsetY = g_Config.m_ClHudStatusPosY;
+					break;
+				case HUD_EDITOR_TIMER:
+					m_HudEditorDragStartOffsetX = g_Config.m_ClHudTimerPosX;
+					m_HudEditorDragStartOffsetY = g_Config.m_ClHudTimerPosY;
+					break;
+				case HUD_EDITOR_RIGHT:
+					m_HudEditorDragStartOffsetX = g_Config.m_ClHudRightPosX;
+					m_HudEditorDragStartOffsetY = g_Config.m_ClHudRightPosY;
+					break;
+				case HUD_EDITOR_SPECTATOR:
+					m_HudEditorDragStartOffsetX = g_Config.m_ClHudSpectatorPosX;
+					m_HudEditorDragStartOffsetY = g_Config.m_ClHudSpectatorPosY;
+					break;
+				}
 			}
 		}
 		else if(Event.m_Flags & IInput::FLAG_RELEASE)
 		{
 			m_HudEditorDragging = false;
 			m_HudEditorSelected = -1;
+			ConfigManager()->Save();
 		}
 		return true;
 	}
