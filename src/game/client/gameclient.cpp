@@ -1158,7 +1158,8 @@ void CGameClient::RenderWcl()
 
 	WclStageStart = WclProfileStart();
 	// Draw thaw-time bars for every active player visible in the WCL camera.
-	// The PiP clip and independent camera keep bars aligned with each character. && g_Config.m_ClShowFreezeBars)
+	// The PiP clip and independent camera keep bars aligned with each character.
+	if(g_Config.m_ClWclShowPlayers && g_Config.m_ClShowFreezeBars)
 	{
 		CScreenRect FreezeBarCullRect = ViewRect;
 		FreezeBarCullRect.Expand(64.0f);
