@@ -734,6 +734,8 @@ void CGameClient::OnReset()
 	// m_MapBugs and m_aTuningList are reset in LoadMapSettings
 
 	m_LastShowDistanceZoom = 0.0f;
+	m_LastShowDistanceX = -1;
+	m_LastShowDistanceY = -1;
 	m_LastZoom = 0.0f;
 	m_LastScreenAspect = 0.0f;
 	m_LastDeadzone = 0.0f;
@@ -1079,19 +1081,6 @@ void CGameClient::RenderWcl()
 	Graphics()->MapScreen(OriginalScreen);
 }
 
-bool CGameClient::WclGetNetworkTargetPosition(vec2 &Position) const
-{
-	if(!g_Config.m_ClWclEnable || !m_WclHasLastTargetPos ||
-		!m_Snap.m_SpecInfo.m_Active || m_Snap.m_SpecInfo.m_SpectatorId != SPEC_FREEVIEW)
-		return false;
-
-	if(!in_range(m_WclLastTargetId, MAX_CLIENTS - 1) ||
-		m_Snap.m_apPlayerInfos[m_WclLastTargetId] == nullptr)
-		return false;
-
-	Position = m_WclLastTargetPos;
-	return true;
-}
 
 void CGameClient::OnDummyDisconnect()
 {
@@ -2539,15 +2528,31 @@ void CGameClient::OnNewSnapshot(bool DummySwapped)
 		FollowFactor = m_LastFollowFactor;
 	}
 
+	// Keep the normal camera untouched, but optionally ask DDNet servers to send
+	// characters/entities from the full map area for the independent WCL camera.
+	float ShowDistanceWidth, ShowDistanceHeight;
+	Graphics()->CalcScreenParams(Graphics()->ScreenAspect(), ShowDistanceZoom, &ShowDistanceWidth, &ShowDistanceHeight);
+	int ShowDistanceX = round_to_int(ShowDistanceWidth);
+	int ShowDistanceY = round_to_int(ShowDistanceHeight);
+	if(g_Config.m_ClWclEnable && g_Config.m_ClWclExtendedRange &&
+		Collision()->GetWidth() > 0 && Collision()->GetHeight() > 0)
+	{
+		// CPlayer::UpdateNetworkClipRadius uses half of CL_SHOWDISTANCE as
+		// the network radius. Cover the complete map plus room beyond its edges.
+		constexpr int WclWorldMargin = 6400;
+		const int MapWidth = Collision()->GetWidth() * 32;
+		const int MapHeight = Collision()->GetHeight() * 32;
+		ShowDistanceX = std::max(ShowDistanceX, 2 * (MapWidth + WclWorldMargin));
+		ShowDistanceY = std::max(ShowDistanceY, 2 * (MapHeight + WclWorldMargin));
+	}
+
 	// initialize dummy vital when first connected
 	if(Client()->DummyConnected() && !m_LastDummyConnected)
 	{
 		{
 			CNetMsg_Cl_ShowDistance Msg;
-			float x, y;
-			Graphics()->CalcScreenParams(Graphics()->ScreenAspect(), ShowDistanceZoom, &x, &y);
-			Msg.m_X = x;
-			Msg.m_Y = y;
+			Msg.m_X = ShowDistanceX;
+			Msg.m_Y = ShowDistanceY;
 			CMsgPacker Packer(&Msg);
 			Msg.Pack(&Packer);
 			Client()->SendMsg(IClient::CONN_DUMMY, &Packer, MSGFLAG_VITAL);
@@ -2564,13 +2569,12 @@ void CGameClient::OnNewSnapshot(bool DummySwapped)
 	}
 
 	// send show distance
-	if(ShowDistanceZoom != m_LastShowDistanceZoom || Graphics()->ScreenAspect() != m_LastScreenAspect)
+	if(ShowDistanceZoom != m_LastShowDistanceZoom || Graphics()->ScreenAspect() != m_LastScreenAspect ||
+		ShowDistanceX != m_LastShowDistanceX || ShowDistanceY != m_LastShowDistanceY)
 	{
 		CNetMsg_Cl_ShowDistance Msg;
-		float x, y;
-		Graphics()->CalcScreenParams(Graphics()->ScreenAspect(), ShowDistanceZoom, &x, &y);
-		Msg.m_X = x;
-		Msg.m_Y = y;
+		Msg.m_X = ShowDistanceX;
+		Msg.m_Y = ShowDistanceY;
 		Client()->ChecksumData()->m_Zoom = ShowDistanceZoom;
 		CMsgPacker Packer(&Msg);
 		Msg.Pack(&Packer);
@@ -2596,6 +2600,8 @@ void CGameClient::OnNewSnapshot(bool DummySwapped)
 	}
 
 	m_LastShowDistanceZoom = ShowDistanceZoom;
+	m_LastShowDistanceX = ShowDistanceX;
+	m_LastShowDistanceY = ShowDistanceY;
 	m_LastZoom = Zoom;
 	m_LastScreenAspect = Graphics()->ScreenAspect();
 	m_LastDeadzone = Deadzone;
