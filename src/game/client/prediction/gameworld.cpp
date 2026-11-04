@@ -31,6 +31,8 @@ CGameWorld::CGameWorld()
 {
 	for(auto &pFirstEntityType : m_apFirstEntityTypes)
 		pFirstEntityType = nullptr;
+	for(auto &pLastEntityType : m_apLastEntityTypes)
+		pLastEntityType = nullptr;
 	for(auto &pCharacter : m_apCharacters)
 		pCharacter = nullptr;
 	m_pCollision = nullptr;
@@ -65,11 +67,7 @@ CEntity *CGameWorld::FindFirst(int Type)
 
 CEntity *CGameWorld::FindLast(int Type)
 {
-	CEntity *pLast = FindFirst(Type);
-	if(pLast)
-		while(pLast->TypeNext())
-			pLast = pLast->TypeNext();
-	return pLast;
+	return Type < 0 || Type >= NUM_ENTTYPES ? nullptr : m_apLastEntityTypes[Type];
 }
 
 int CGameWorld::FindEntities(vec2 Pos, float Radius, CEntity **ppEnts, int Max, int Type)
@@ -80,7 +78,13 @@ int CGameWorld::FindEntities(vec2 Pos, float Radius, CEntity **ppEnts, int Max, 
 	int Num = 0;
 	for(CEntity *pEnt = m_apFirstEntityTypes[Type]; pEnt; pEnt = pEnt->m_pNextTypeEntity)
 	{
-		if(distance(pEnt->m_Pos, Pos) < Radius + pEnt->m_ProximityRadius)
+		const float MaxDistance = Radius + pEnt->m_ProximityRadius;
+		if(MaxDistance <= 0.0f)
+			continue;
+
+		const float DeltaX = pEnt->m_Pos.x - Pos.x;
+		const float DeltaY = pEnt->m_Pos.y - Pos.y;
+		if(DeltaX * DeltaX + DeltaY * DeltaY < MaxDistance * MaxDistance)
 		{
 			if(ppEnts)
 				ppEnts[Num] = pEnt;
@@ -95,41 +99,35 @@ int CGameWorld::FindEntities(vec2 Pos, float Radius, CEntity **ppEnts, int Max, 
 
 void CGameWorld::InsertEntity(CEntity *pEnt, bool Last)
 {
+	const int Type = pEnt->m_ObjType;
 	pEnt->m_pGameWorld = this;
 	pEnt->m_pNextTypeEntity = nullptr;
 	pEnt->m_pPrevTypeEntity = nullptr;
 
-	// insert it
+	// Keep both ends of each entity list so appending is constant-time.
 	if(!Last)
 	{
-		if(m_apFirstEntityTypes[pEnt->m_ObjType])
-			m_apFirstEntityTypes[pEnt->m_ObjType]->m_pPrevTypeEntity = pEnt;
-		pEnt->m_pNextTypeEntity = m_apFirstEntityTypes[pEnt->m_ObjType];
-		pEnt->m_pPrevTypeEntity = nullptr;
-		m_apFirstEntityTypes[pEnt->m_ObjType] = pEnt;
+		pEnt->m_pNextTypeEntity = m_apFirstEntityTypes[Type];
+		if(m_apFirstEntityTypes[Type])
+			m_apFirstEntityTypes[Type]->m_pPrevTypeEntity = pEnt;
+		else
+			m_apLastEntityTypes[Type] = pEnt;
+		m_apFirstEntityTypes[Type] = pEnt;
 	}
 	else
 	{
-		// insert it at the end of the list
-		CEntity *pLast = m_apFirstEntityTypes[pEnt->m_ObjType];
-		if(pLast)
-		{
-			while(pLast->m_pNextTypeEntity)
-				pLast = pLast->m_pNextTypeEntity;
-			pLast->m_pNextTypeEntity = pEnt;
-		}
+		pEnt->m_pPrevTypeEntity = m_apLastEntityTypes[Type];
+		if(m_apLastEntityTypes[Type])
+			m_apLastEntityTypes[Type]->m_pNextTypeEntity = pEnt;
 		else
-		{
-			m_apFirstEntityTypes[pEnt->m_ObjType] = pEnt;
-		}
-		pEnt->m_pPrevTypeEntity = pLast;
-		pEnt->m_pNextTypeEntity = nullptr;
+			m_apFirstEntityTypes[Type] = pEnt;
+		m_apLastEntityTypes[Type] = pEnt;
 	}
 
-	if(pEnt->m_ObjType == ENTTYPE_CHARACTER)
+	if(Type == ENTTYPE_CHARACTER)
 	{
 		auto *pChar = (CCharacter *)pEnt;
-		int Id = pChar->GetCid();
+		const int Id = pChar->GetCid();
 		if(Id >= 0 && Id < MAX_CLIENTS)
 		{
 			m_apCharacters[Id] = pChar;
@@ -137,21 +135,55 @@ void CGameWorld::InsertEntity(CEntity *pEnt, bool Last)
 		}
 		pChar->SetCoreWorld(this);
 	}
+	else if(pEnt->m_Id >= 0)
+	{
+		auto &vEntities = m_aaEntityById[Type];
+		const size_t Id = (size_t)pEnt->m_Id;
+		if(vEntities.size() <= Id)
+			vEntities.resize(Id + 1, nullptr);
+		// A front insertion becomes the first match. An append only fills an empty slot.
+		if(!Last || vEntities[Id] == nullptr)
+			vEntities[Id] = pEnt;
+	}
 }
 
 void CGameWorld::RemoveEntity(CEntity *pEnt)
 {
+	const int Type = pEnt->m_ObjType;
 	// not in the list
-	if(!pEnt->m_pNextTypeEntity && !pEnt->m_pPrevTypeEntity && m_apFirstEntityTypes[pEnt->m_ObjType] != pEnt)
+	if(!pEnt->m_pNextTypeEntity && !pEnt->m_pPrevTypeEntity && m_apFirstEntityTypes[Type] != pEnt)
 		return;
+
+	const int Id = pEnt->m_Id;
 
 	// remove
 	if(pEnt->m_pPrevTypeEntity)
 		pEnt->m_pPrevTypeEntity->m_pNextTypeEntity = pEnt->m_pNextTypeEntity;
 	else
-		m_apFirstEntityTypes[pEnt->m_ObjType] = pEnt->m_pNextTypeEntity;
+		m_apFirstEntityTypes[Type] = pEnt->m_pNextTypeEntity;
 	if(pEnt->m_pNextTypeEntity)
 		pEnt->m_pNextTypeEntity->m_pPrevTypeEntity = pEnt->m_pPrevTypeEntity;
+	else
+		m_apLastEntityTypes[Type] = pEnt->m_pPrevTypeEntity;
+
+	// Keep the direct lookup in sync, including the rare case of duplicate IDs
+	// while an old predicted entity is waiting to be removed.
+	if(Type != ENTTYPE_CHARACTER && Id >= 0)
+	{
+		auto &vEntities = m_aaEntityById[Type];
+		if((size_t)Id < vEntities.size() && vEntities[Id] == pEnt)
+		{
+			vEntities[Id] = nullptr;
+			for(CEntity *pOther = m_apFirstEntityTypes[Type]; pOther; pOther = pOther->m_pNextTypeEntity)
+			{
+				if(pOther->m_Id == Id)
+				{
+					vEntities[Id] = pOther;
+					break;
+				}
+			}
+		}
+	}
 
 	// keep list traversing valid
 	if(m_pNextTraverseEntity == pEnt)
@@ -172,6 +204,50 @@ void CGameWorld::RemoveEntity(CEntity *pEnt)
 		pEnt->m_pChild->m_pParent = nullptr;
 		pEnt->m_pChild = nullptr;
 	}
+}
+
+void CGameWorld::SetEntityId(CEntity *pEnt, int Id)
+{
+	const int Type = pEnt->m_ObjType;
+	const int OldId = pEnt->m_Id;
+	if(Type == ENTTYPE_CHARACTER)
+	{
+		pEnt->m_Id = Id;
+		return;
+	}
+
+	auto &vEntities = m_aaEntityById[Type];
+	if(OldId >= 0 && (size_t)OldId < vEntities.size() && vEntities[OldId] == pEnt)
+	{
+		vEntities[OldId] = nullptr;
+		for(CEntity *pOther = m_apFirstEntityTypes[Type]; pOther; pOther = pOther->m_pNextTypeEntity)
+		{
+			if(pOther != pEnt && pOther->m_Id == OldId)
+			{
+				vEntities[OldId] = pOther;
+				break;
+			}
+		}
+	}
+
+	pEnt->m_Id = Id;
+	if(Id < 0)
+		return;
+
+	const size_t NewIndex = (size_t)Id;
+	if(vEntities.size() <= NewIndex)
+		vEntities.resize(NewIndex + 1, nullptr);
+
+	// Re-keying is uncommon, so preserve list order by selecting the first match.
+	for(CEntity *pOther = m_apFirstEntityTypes[Type]; pOther; pOther = pOther->m_pNextTypeEntity)
+	{
+		if(pOther->m_Id == Id)
+		{
+			vEntities[NewIndex] = pOther;
+			return;
+		}
+	}
+	vEntities[NewIndex] = nullptr;
 }
 
 void CGameWorld::RemoveCharacter(CCharacter *pChar)
@@ -267,7 +343,9 @@ CCharacter *CGameWorld::IntersectCharacter(vec2 Pos0, vec2 Pos1, float Radius, v
 
 CEntity *CGameWorld::IntersectEntity(vec2 Pos0, vec2 Pos1, float Radius, int Type, vec2 &NewPos, const CEntity *pNotThis, int CollideWith, const CEntity *pThisOnly)
 {
-	float ClosestLen = distance(Pos0, Pos1) * 100.0f;
+	const float SegmentX = Pos1.x - Pos0.x;
+	const float SegmentY = Pos1.y - Pos0.y;
+	float ClosestLenSquared = (SegmentX * SegmentX + SegmentY * SegmentY) * 10000.0f;
 	CEntity *pClosest = nullptr;
 
 	CEntity *pEntity = FindFirst(Type);
@@ -285,14 +363,21 @@ CEntity *CGameWorld::IntersectEntity(vec2 Pos0, vec2 Pos1, float Radius, int Typ
 		vec2 IntersectPos;
 		if(closest_point_on_line(Pos0, Pos1, pEntity->m_Pos, IntersectPos))
 		{
-			float Len = distance(pEntity->m_Pos, IntersectPos);
-			if(Len < pEntity->m_ProximityRadius + Radius)
+			const float MaxDistance = pEntity->m_ProximityRadius + Radius;
+			if(MaxDistance <= 0.0f)
+				continue;
+
+			const float EntityDeltaX = pEntity->m_Pos.x - IntersectPos.x;
+			const float EntityDeltaY = pEntity->m_Pos.y - IntersectPos.y;
+			if(EntityDeltaX * EntityDeltaX + EntityDeltaY * EntityDeltaY < MaxDistance * MaxDistance)
 			{
-				Len = distance(Pos0, IntersectPos);
-				if(Len < ClosestLen)
+				const float StartDeltaX = Pos0.x - IntersectPos.x;
+				const float StartDeltaY = Pos0.y - IntersectPos.y;
+				const float LenSquared = StartDeltaX * StartDeltaX + StartDeltaY * StartDeltaY;
+				if(LenSquared < ClosestLenSquared)
 				{
 					NewPos = IntersectPos;
-					ClosestLen = Len;
+					ClosestLenSquared = LenSquared;
 					pClosest = pEntity;
 				}
 			}
@@ -314,11 +399,14 @@ std::vector<CCharacter *> CGameWorld::IntersectedCharacters(vec2 Pos0, vec2 Pos1
 		vec2 IntersectPos;
 		if(closest_point_on_line(Pos0, Pos1, pChr->m_Pos, IntersectPos))
 		{
-			float Len = distance(pChr->m_Pos, IntersectPos);
-			if(Len < pChr->m_ProximityRadius + Radius)
-			{
+			const float MaxDistance = pChr->m_ProximityRadius + Radius;
+			if(MaxDistance <= 0.0f)
+				continue;
+
+			const float DeltaX = pChr->m_Pos.x - IntersectPos.x;
+			const float DeltaY = pChr->m_Pos.y - IntersectPos.y;
+			if(DeltaX * DeltaX + DeltaY * DeltaY < MaxDistance * MaxDistance)
 				vpCharacters.push_back(pChr);
-			}
 		}
 	}
 	return vpCharacters;
@@ -338,10 +426,23 @@ void CGameWorld::ReleaseHooked(int ClientId)
 
 CEntity *CGameWorld::GetEntity(int Id, int EntityType)
 {
-	for(CEntity *pEnt = m_apFirstEntityTypes[EntityType]; pEnt; pEnt = pEnt->m_pNextTypeEntity)
-		if(pEnt->m_Id == Id)
-			return pEnt;
-	return nullptr;
+	if(EntityType < 0 || EntityType >= NUM_ENTTYPES)
+		return nullptr;
+
+	if(EntityType == ENTTYPE_CHARACTER && Id >= 0 && Id < MAX_CLIENTS)
+		return m_apCharacters[Id];
+
+	// Negative IDs are reserved for locally predicted entities and are not unique.
+	if(Id < 0)
+	{
+		for(CEntity *pEnt = m_apFirstEntityTypes[EntityType]; pEnt; pEnt = pEnt->m_pNextTypeEntity)
+			if(pEnt->m_Id == Id)
+				return pEnt;
+		return nullptr;
+	}
+
+	const auto &vEntities = m_aaEntityById[EntityType];
+	return (size_t)Id < vEntities.size() ? vEntities[Id] : nullptr;
 }
 
 void CGameWorld::CreateExplosion(vec2 Pos, int Owner, int Weapon, bool NoDamage, int ActivatedTeam, CClientMask Mask, int Id)
@@ -466,7 +567,7 @@ void CGameWorld::NetObjAdd(int ObjId, int ObjType, const void *pObjData, const C
 			{
 				if(pProj->m_Id == -1 && NetProj.Match(pProj))
 				{
-					pProj->m_Id = ObjId;
+					SetEntityId(pProj, ObjId);
 					pProj->Keep();
 					return;
 				}
@@ -546,7 +647,7 @@ void CGameWorld::NetObjAdd(int ObjId, int ObjType, const void *pObjData, const C
 					if(pLaser && pLaser->m_Id == -1 && NetLaser.Match(pLaser))
 					{
 						pMatching = pLaser;
-						pMatching->m_Id = ObjId;
+						SetEntityId(pMatching, ObjId);
 						break;
 					}
 				}

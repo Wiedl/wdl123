@@ -144,9 +144,12 @@ public:
 
 private:
 	void RemoveEntities();
+	void SetEntityId(CEntity *pEntity, int Id);
 
 	CEntity *m_pNextTraverseEntity = nullptr;
 	CEntity *m_apFirstEntityTypes[NUM_ENTTYPES];
+	CEntity *m_apLastEntityTypes[NUM_ENTTYPES];
+	std::vector<CEntity *> m_aaEntityById[NUM_ENTTYPES];
 
 	CCharacter *m_apCharacters[MAX_CLIENTS];
 
