@@ -176,9 +176,43 @@ void CMenus::RenderSettings(CUIRect MainView)
 
 void CMenus::RenderSettingsWcl(CUIRect MainView)
 {
-	CUIRect Slider;
-	Ui()->DoLabel(&MainView, "WCL - Picture in Picture", 20.0f, TEXTALIGN_TL);
+	CUIRect Slider, TabBar, LeftTab, RightTab;
+	static int s_WclSettingsTab = 0;
+	static CButtonContainer s_WclPiPTab;
+	static CButtonContainer s_WclChatTab;
+	Ui()->DoLabel(&MainView, "WCL", 20.0f, TEXTALIGN_TL);
 	MainView.HSplitTop(5.0f, nullptr, &MainView);
+
+	// Keep PiP and chat options on separate pages within the WCL settings.
+	MainView.HSplitTop(28.0f, &TabBar, &MainView);
+	LeftTab = TabBar;
+	RightTab = TabBar;
+	LeftTab.w = (TabBar.w - 5.0f) / 2.0f;
+	RightTab.x += LeftTab.w + 5.0f;
+	RightTab.w = LeftTab.w;
+	if(DoButton_MenuTab(&s_WclPiPTab, Localize("Picture in Picture"), s_WclSettingsTab == 0, &LeftTab, IGraphics::CORNER_ALL))
+		s_WclSettingsTab = 0;
+	if(DoButton_MenuTab(&s_WclChatTab, Localize("Chat"), s_WclSettingsTab == 1, &RightTab, IGraphics::CORNER_ALL))
+		s_WclSettingsTab = 1;
+	MainView.HSplitTop(8.0f, nullptr, &MainView);
+
+	if(s_WclSettingsTab == 1)
+	{
+		Ui()->DoLabel(&MainView, Localize("Chat settings"), 16.0f, TEXTALIGN_TL);
+		MainView.HSplitTop(8.0f, nullptr, &MainView);
+		static CButtonContainer s_WclFriendMessageColor;
+		const unsigned int PreviousFriendMessageColor = g_Config.m_ClMessageFriendColor;
+		const int PreviousFriendMessageEnabled = g_Config.m_ClMessageFriend;
+		DoLine_ColorPicker(&s_WclFriendMessageColor, 25.0f, 13.0f, 5.0f, &MainView,
+			Localize("Friend message"), &g_Config.m_ClMessageFriendColor,
+			ColorRGBA(1.0f, 0.137f, 0.137f), true, &g_Config.m_ClMessageFriend);
+		if(PreviousFriendMessageColor != g_Config.m_ClMessageFriendColor ||
+			PreviousFriendMessageEnabled != g_Config.m_ClMessageFriend)
+		{
+			GameClient()->m_Chat.RebuildChat();
+		}
+		return;
+	}
 	CUIRect Hint;
 	MainView.HSplitTop(18.0f, &Hint, &MainView);
 	Ui()->DoLabel(&Hint, Localize("Full-map tracking can significantly increase network traffic."), 12.0f, TEXTALIGN_TL);
@@ -188,20 +222,6 @@ void CMenus::RenderSettingsWcl(CUIRect MainView)
 	DoButton_CheckBoxAutoVMarginAndSet(&s_WclWorldId, Localize("Show map and game world"), &g_Config.m_ClWclShowWorld, &MainView, 20.0f);
 	DoButton_CheckBoxAutoVMarginAndSet(&s_WclPlayersId, Localize("Show other players"), &g_Config.m_ClWclShowPlayers, &MainView, 20.0f);
 	DoButton_CheckBoxAutoVMarginAndSet(&s_WclExtendedRangeId, Localize("Full-map tracking range"), &g_Config.m_ClWclExtendedRange, &MainView, 20.0f);
-
-	// Reuse the existing friend-message color setting so it stays consistent
-	// with chat logs and the friend marker, and expose it on the WCL page.
-	static CButtonContainer s_WclFriendMessageColor;
-	const unsigned int PreviousFriendMessageColor = g_Config.m_ClMessageFriendColor;
-	const int PreviousFriendMessageEnabled = g_Config.m_ClMessageFriend;
-	DoLine_ColorPicker(&s_WclFriendMessageColor, 25.0f, 13.0f, 5.0f, &MainView,
-		Localize("Friend message"), &g_Config.m_ClMessageFriendColor,
-		ColorRGBA(1.0f, 0.137f, 0.137f), true, &g_Config.m_ClMessageFriend);
-	if(PreviousFriendMessageColor != g_Config.m_ClMessageFriendColor ||
-		PreviousFriendMessageEnabled != g_Config.m_ClMessageFriend)
-	{
-		GameClient()->m_Chat.RebuildChat();
-	}
 
 	Ui()->DoLabel(&MainView, Localize("Target player"), 14.0f, TEXTALIGN_TL);
 	MainView.HSplitTop(22.0f, nullptr, &MainView);
