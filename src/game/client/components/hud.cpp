@@ -39,13 +39,24 @@ void CHud::ConHudEditor(IConsole::IResult *pResult, void *pUserData)
 {
 	(void)pResult;
 	CHud *pSelf = static_cast<CHud *>(pUserData);
-	pSelf->m_HudEditorActive = !pSelf->m_HudEditorActive;
-	pSelf->m_HudEditorSelected = -1;
+	pSelf->SetHudEditorActive(!pSelf->m_HudEditorActive);
 }
 
 void CHud::ConHudEditorReset(IConsole::IResult *pResult, void *pUserData)
 {
 	(void)pResult;
+	CHud *pSelf = static_cast<CHud *>(pUserData);
+	pSelf->ResetHudEditorLayout();
+}
+
+void CHud::SetHudEditorActive(bool Active)
+{
+	m_HudEditorActive = Active;
+	m_HudEditorSelected = -1;
+}
+
+void CHud::ResetHudEditorLayout()
+{
 	g_Config.m_ClHudStatusPosX = 0;
 	g_Config.m_ClHudStatusPosY = 0;
 	g_Config.m_ClHudStatusScale = 1000;
@@ -58,9 +69,7 @@ void CHud::ConHudEditorReset(IConsole::IResult *pResult, void *pUserData)
 	g_Config.m_ClHudSpectatorPosX = 0;
 	g_Config.m_ClHudSpectatorPosY = 0;
 	g_Config.m_ClHudSpectatorScale = 1000;
-
-	CHud *pSelf = static_cast<CHud *>(pUserData);
-	pSelf->m_HudEditorSelected = -1;
+	m_HudEditorSelected = -1;
 }
 
 void CHud::GetHudEditorBaseRect(int Element, vec2 &Pos, vec2 &Size) const
