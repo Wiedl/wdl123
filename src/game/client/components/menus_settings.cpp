@@ -182,10 +182,11 @@ void CMenus::RenderSettingsWcl(CUIRect MainView)
 	MainView.HSplitTop(18.0f, &Hint, &MainView);
 	Ui()->DoLabel(&Hint, Localize("Extended range can increase network traffic."), 12.0f, TEXTALIGN_TL);
 	MainView.HSplitTop(12.0f, nullptr, &MainView);
-	static int s_WclEnableId, s_WclWorldId, s_WclPlayersId;
+	static int s_WclEnableId, s_WclWorldId, s_WclPlayersId, s_WclExtendedRangeId;
 	DoButton_CheckBoxAutoVMarginAndSet(&s_WclEnableId, Localize("Enable teammate window"), &g_Config.m_ClWclEnable, &MainView, 20.0f);
 	DoButton_CheckBoxAutoVMarginAndSet(&s_WclWorldId, Localize("Show map and game world"), &g_Config.m_ClWclShowWorld, &MainView, 20.0f);
 	DoButton_CheckBoxAutoVMarginAndSet(&s_WclPlayersId, Localize("Show other players"), &g_Config.m_ClWclShowPlayers, &MainView, 20.0f);
+	DoButton_CheckBoxAutoVMarginAndSet(&s_WclExtendedRangeId, Localize("Extended tracking range"), &g_Config.m_ClWclExtendedRange, &MainView, 20.0f);
 	Ui()->DoLabel(&MainView, Localize("Target player client ID (-1: automatic)"), 14.0f, TEXTALIGN_TL);
 	MainView.HSplitTop(22.0f, nullptr, &MainView);
 	MainView.HSplitTop(22.0f, &Slider, &MainView);
