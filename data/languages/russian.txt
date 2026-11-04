@@ -958,6 +958,51 @@ Download skins
 Learn
 == Обучение
 
+Automatic (nearest player)
+== Автоматически (ближайший игрок)
+
+Camera zoom
+== Масштаб камеры
+
+Chat settings
+== Настройки чата
+
+Enable teammate window
+== Включить окно наблюдения
+
+Full-map tracking can significantly increase network traffic.
+== Отслеживание по всей карте может увеличить сетевой трафик.
+
+Full-map tracking range
+== Отслеживание всей карты
+
+Horizontal
+== По горизонтали
+
+Picture in Picture
+== Окно в окне
+
+Show map and game world
+== Показывать карту и игровой мир
+
+Show other players
+== Показывать остальных игроков
+
+Target player
+== Игрок для наблюдения
+
+Vertical
+== По вертикали
+
+Window position
+== Положение окна
+
+Window size
+== Размер окна
+
+Zoom
+== Масштаб
+
 [Start menu]
 Play
 == Играть
@@ -2716,24 +2761,3 @@ Full-map tracking range
 
 Target player
 == Игрок для наблюдения
-
-Automatic (nearest player)
-== Автоматически (ближайший игрок)
-
-Window size
-== Размер окна
-
-Window position
-== Положение окна
-
-Horizontal
-== По горизонтали
-
-Vertical
-== По вертикали
-
-Camera zoom
-== Масштаб камеры
-
-Zoom
-== Масштаб
