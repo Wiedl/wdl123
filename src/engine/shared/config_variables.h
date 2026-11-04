@@ -73,7 +73,7 @@ MACRO_CONFIG_INT(ClWclEnable, cl_wcl_enable, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_S
 MACRO_CONFIG_INT(ClWclExtendedRange, cl_wcl_extended_range, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Extend server network view to the map bounds while WCL is enabled")
 MACRO_CONFIG_INT(ClWclShowWorld, cl_wcl_show_world, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Render the map and game world in the WCL window")
 MACRO_CONFIG_INT(ClWclShowPlayers, cl_wcl_show_players, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Render players in the WCL window")
-MACRO_CONFIG_INT(ClWclPlayerId, cl_wcl_player_id, -1, -1, 63, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Player client ID to follow in the WCL window; -1 selects automatically")
+MACRO_CONFIG_STR(ClWclPlayerName, cl_wcl_player_name, 64, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "Player nickname to follow in the WCL window; empty selects automatically")
 MACRO_CONFIG_INT(ClWclWidth, cl_wcl_width, 280, 120, 640, CFGFLAG_CLIENT | CFGFLAG_SAVE, "WCL window width in screen units")
 MACRO_CONFIG_INT(ClWclHeight, cl_wcl_height, 170, 70, 400, CFGFLAG_CLIENT | CFGFLAG_SAVE, "WCL window height in screen units")
 MACRO_CONFIG_INT(ClWclPosX, cl_wcl_pos_x, 95, 0, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "WCL window horizontal position in percent")
