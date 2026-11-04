@@ -809,7 +809,7 @@ DDNet
 == DDNet
 
 Friend message
-== Дружеское
+== Цвет сообщений друзей
 
 Save the best demo of each race
 == Сохранять лучшее демо каждой карты
@@ -2692,3 +2692,48 @@ Always predict frozen players
 
 No country flags match your filter criteria
 == 
+
+Picture in Picture
+== Окно в окне
+
+Chat settings
+== Настройки чата
+
+Full-map tracking can significantly increase network traffic.
+== Отслеживание по всей карте может увеличить сетевой трафик.
+
+Enable teammate window
+== Включить окно наблюдения
+
+Show map and game world
+== Показывать карту и игровой мир
+
+Show other players
+== Показывать остальных игроков
+
+Full-map tracking range
+== Отслеживание всей карты
+
+Target player
+== Игрок для наблюдения
+
+Automatic (nearest player)
+== Автоматически (ближайший игрок)
+
+Window size
+== Размер окна
+
+Window position
+== Положение окна
+
+Horizontal
+== По горизонтали
+
+Vertical
+== По вертикали
+
+Camera zoom
+== Масштаб камеры
+
+Zoom
+== Масштаб
