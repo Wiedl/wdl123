@@ -21,6 +21,7 @@
 #include <game/client/animstate.h>
 #include <game/client/components/scoreboard.h>
 #include <game/client/gameclient.h>
+#include <game/client/ui.h>
 #include <game/client/prediction/entities/character.h>
 #include <game/layers.h>
 #include <game/localization.h>
@@ -36,6 +37,7 @@ void CHud::OnConsoleInit()
 
 void CHud::ConHudEditor(IConsole::IResult *pResult, void *pUserData)
 {
+	(void)pResult;
 	CHud *pSelf = static_cast<CHud *>(pUserData);
 	pSelf->m_HudEditorActive = !pSelf->m_HudEditorActive;
 	pSelf->m_HudEditorSelected = -1;
@@ -43,6 +45,7 @@ void CHud::ConHudEditor(IConsole::IResult *pResult, void *pUserData)
 
 void CHud::ConHudEditorReset(IConsole::IResult *pResult, void *pUserData)
 {
+	(void)pResult;
 	g_Config.m_ClHudStatusPosX = 0;
 	g_Config.m_ClHudStatusPosY = 0;
 	g_Config.m_ClHudStatusScale = 1000;
