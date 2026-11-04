@@ -254,11 +254,11 @@ void CMenus::RenderSettingsWcl(CUIRect MainView)
 			MainView.HSplitTop(20.0f, &GroupTitle, &MainView);
 			Ui()->DoLabel(&GroupTitle, pTitle, 14.0f, TEXTALIGN_TL);
 			MainView.HSplitTop(22.0f, &Slider, &MainView);
-			DoSliderWithScaledValue(pPosX, pPosX, &Slider, Localize("Horizontal offset (%)"), -10000, 10000, 100, &CUi::ms_LinearScrollbarScale);
+			DoSliderWithScaledValue(pPosX, pPosX, &Slider, Localize("Horizontal offset (%)"), -100, 100, 1, &CUi::ms_LinearScrollbarScale);
 			MainView.HSplitTop(22.0f, &Slider, &MainView);
-			DoSliderWithScaledValue(pPosY, pPosY, &Slider, Localize("Vertical offset (%)"), -10000, 10000, 100, &CUi::ms_LinearScrollbarScale);
+			DoSliderWithScaledValue(pPosY, pPosY, &Slider, Localize("Vertical offset (%)"), -100, 100, 1, &CUi::ms_LinearScrollbarScale);
 			MainView.HSplitTop(22.0f, &Slider, &MainView);
-			DoSliderWithScaledValue(pScale, pScale, &Slider, Localize("Scale (50–200%)"), 500, 2000, 50, &CUi::ms_LinearScrollbarScale);
+			DoSliderWithScaledValue(pScale, pScale, &Slider, Localize("Scale (50–200%)"), 50, 200, 5, &CUi::ms_LinearScrollbarScale);
 			MainView.HSplitTop(4.0f, nullptr, &MainView);
 		};
 
