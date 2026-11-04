@@ -12,6 +12,7 @@
 #include <game/client/components/menu_background.h>
 #include <game/client/gameclient.h>
 #include <game/client/ui.h>
+#include <game/client/ui_scrollregion.h>
 #include <game/localization.h>
 
 void CMenus::SetNeedSendInfo()
@@ -194,6 +195,10 @@ void CMenus::RenderSettingsWcl(CUIRect MainView)
 	// Build the dropdown from the current server snapshot. The user sees names,
 	// while the selected client slot keeps players with the same IP distinct.
 	static CUi::SDropDownState s_WclTargetDropDown;
+	static CScrollRegion s_WclTargetScrollRegion;
+	// Selection popups need a stable scroll region; its address is also used
+	// as a UI item ID, so keep it static for the lifetime of the dropdown.
+	s_WclTargetDropDown.m_SelectionPopupContext.m_pScrollRegion = &s_WclTargetScrollRegion;
 	char aaPlayerNames[MAX_CLIENTS + 1][MAX_NAME_LENGTH + MAX_CLAN_LENGTH + 32];
 	const char *apPlayerNames[MAX_CLIENTS + 1];
 	int aPlayerIds[MAX_CLIENTS + 1];
