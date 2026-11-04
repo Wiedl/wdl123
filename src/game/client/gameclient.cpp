@@ -996,6 +996,9 @@ void CGameClient::RenderWcl()
 
 	Graphics()->ClipPush();
 	Graphics()->ClipEnable(X, Y, Width, Height);
+	// Keep the PiP clip as the parent while map groups temporarily disable
+	// their own clipping and install per-group clip regions.
+	Graphics()->ClipPush();
 	Graphics()->MapScreen(WclScreenRect);
 
 	if(g_Config.m_ClWclShowWorld)
@@ -1010,6 +1013,7 @@ void CGameClient::RenderWcl()
 	if(g_Config.m_ClWclShowWorld)
 		m_MapLayersForeground.RenderWithCamera(Center, Zoom, Aspect, X, Y, Width, Height);
 
+	Graphics()->ClipPop();
 	Graphics()->ClipPop();
 
 	Graphics()->MapScreenToSize((float)ScreenWidth, (float)ScreenHeight);
