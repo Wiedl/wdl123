@@ -989,7 +989,7 @@ void CGameClient::RenderWcl()
 			}
 		}
 	}
-	else if(m_WclHasLastTargetPos && m_WclLastTargetId >= 0 &&
+	else if(m_WclHasLastTargetPos && in_range(m_WclLastTargetId, MAX_CLIENTS - 1) &&
 		m_Snap.m_apPlayerInfos[m_WclLastTargetId] != nullptr)
 	{
 		// Empty nickname keeps automatic mode, preferring the previous target
