@@ -199,6 +199,7 @@ void CGameClient::OnConsoleInit()
 						  &m_Emoticon,
 						  &m_ImportantAlert,
 						  &m_Menus,
+						  &m_Hud, // WDL HUD editor captures input while editing
 						  &m_Controls,
 						  &m_TouchControls,
 						  &m_Binds});
