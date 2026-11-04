@@ -24,6 +24,11 @@ void CMenus::SetNeedSendInfo()
 
 void CMenus::RenderSettings(CUIRect MainView)
 {
+	// A previously saved settings page can become invalid when tabs are added
+	// or removed. Clamp it before indexing the tab animator array or dispatching.
+	if(g_Config.m_UiSettingsPage < SETTINGS_LANGUAGE || g_Config.m_UiSettingsPage >= SETTINGS_LENGTH)
+		g_Config.m_UiSettingsPage = SETTINGS_LANGUAGE;
+
 	// render background
 	CUIRect Button, TabBar, RestartBar;
 	MainView.VSplitRight(120.0f, &MainView, &TabBar);
