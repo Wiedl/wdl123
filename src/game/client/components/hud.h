@@ -57,6 +57,7 @@ class CHud : public CComponent
 	};
 
 	bool m_HudEditorActive = false;
+	bool m_HudEditorDragging = false;
 	int m_HudEditorSelected = -1;
 
 	void GetHudEditorBaseRect(int Element, vec2 &Pos, vec2 &Size) const;
