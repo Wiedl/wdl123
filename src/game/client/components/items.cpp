@@ -19,7 +19,7 @@
 #include <game/client/projectile_data.h>
 #include <game/mapitems.h>
 
-void CItems::RenderProjectile(const CProjectileData *pCurrent, int ItemId, const CScreenRect &ScreenRect)
+void CItems::RenderProjectile(const CProjectileData *pCurrent, int ItemId, const CScreenRect &ScreenRect, bool CreateEffects)
 {
 	int CurWeapon = std::clamp(pCurrent->m_Type, 0, NUM_WEAPONS - 1);
 
@@ -101,7 +101,8 @@ void CItems::RenderProjectile(const CProjectileData *pCurrent, int ItemId, const
 	// don't check for validity of the projectile for the current weapon here, so particle effects are rendered for mod compatibility
 	if(CurWeapon == WEAPON_GRENADE)
 	{
-		GameClient()->m_Effects.SmokeTrail(Pos, Vel * -1, Alpha, 0.0f);
+		if(CreateEffects)
+			GameClient()->m_Effects.SmokeTrail(Pos, Vel * -1, Alpha, 0.0f);
 		static float s_Time = 0.0f;
 		static float s_LastLocalTime = LocalTime();
 		s_Time += (LocalTime() - s_LastLocalTime) * GameClient()->GetAnimationPlaybackSpeed();
@@ -110,7 +111,8 @@ void CItems::RenderProjectile(const CProjectileData *pCurrent, int ItemId, const
 	}
 	else
 	{
-		GameClient()->m_Effects.BulletTrail(Pos, Alpha, 0.0f);
+		if(CreateEffects)
+			GameClient()->m_Effects.BulletTrail(Pos, Alpha, 0.0f);
 
 		if(length(Vel) > 0.00001f)
 			Graphics()->QuadsSetRotation(angle(Vel));
@@ -126,12 +128,14 @@ void CItems::RenderProjectile(const CProjectileData *pCurrent, int ItemId, const
 	}
 }
 
-void CItems::RenderPickup(const CNetObj_Pickup *pPrev, const CNetObj_Pickup *pCurrent, bool IsPredicted, int Flags)
+void CItems::RenderPickup(const CNetObj_Pickup *pPrev, const CNetObj_Pickup *pCurrent, bool IsPredicted, int Flags, const CScreenRect &ScreenRect, bool CreateEffects)
 {
 	int CurWeapon = std::clamp(pCurrent->m_Subtype, 0, NUM_WEAPONS - 1);
 	int QuadOffset = 2;
 	float IntraTick = IsPredicted ? Client()->PredIntraGameTick(g_Config.m_ClDummy) : Client()->IntraGameTick(g_Config.m_ClDummy);
 	vec2 Pos = mix(vec2(pPrev->m_X, pPrev->m_Y), vec2(pCurrent->m_X, pCurrent->m_Y), IntraTick);
+	if(!ScreenRect.Inside(Pos))
+		return;
 	if(pCurrent->m_Type == POWERUP_HEALTH)
 	{
 		QuadOffset = m_PickupHealthOffset;
@@ -155,10 +159,13 @@ void CItems::RenderPickup(const CNetObj_Pickup *pPrev, const CNetObj_Pickup *pCu
 	else if(pCurrent->m_Type == POWERUP_NINJA)
 	{
 		QuadOffset = m_PickupNinjaOffset;
-		if(Flags & PICKUPFLAG_ROTATE)
-			GameClient()->m_Effects.PowerupShine(Pos, vec2(18, 96), 1.0f);
-		else
-			GameClient()->m_Effects.PowerupShine(Pos, vec2(96, 18), 1.0f);
+		if(CreateEffects)
+		{
+			if(Flags & PICKUPFLAG_ROTATE)
+				GameClient()->m_Effects.PowerupShine(Pos, vec2(18, 96), 1.0f);
+			else
+				GameClient()->m_Effects.PowerupShine(Pos, vec2(96, 18), 1.0f);
+		}
 
 		Graphics()->TextureSet(GameClient()->m_GameSkin.m_SpritePickupNinja);
 	}
@@ -454,6 +461,16 @@ void CItems::RenderLaser(vec2 From, vec2 Pos, ColorRGBA OuterColor, ColorRGBA In
 
 void CItems::OnRender()
 {
+	OnRenderInternal(false);
+}
+
+void CItems::OnRenderWcl()
+{
+	OnRenderInternal(true);
+}
+
+void CItems::OnRenderInternal(bool WclRender)
+{
 	if(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
 		return;
 
@@ -496,7 +513,7 @@ void CItems::OnRender()
 				continue;
 
 			CProjectileData Data = pProj->GetData();
-			RenderProjectile(&Data, pProj->GetId(), ScreenRectProjectile);
+			RenderProjectile(&Data, pProj->GetId(), ScreenRectProjectile, !WclRender);
 		}
 		for(CEntity *pEnt = GameClient()->m_PrevPredictedWorld.FindFirst(CGameWorld::ENTTYPE_LASER); pEnt; pEnt = pEnt->NextEntity())
 		{
@@ -520,7 +537,7 @@ void CItems::OnRender()
 					CNetObj_Pickup Data, Prev;
 					pPickup->FillInfo(&Data);
 					pPrev->FillInfo(&Prev);
-					RenderPickup(&Prev, &Data, true, pPickup->Flags());
+					RenderPickup(&Prev, &Data, true, pPickup->Flags(), ScreenRectPickup, !WclRender);
 				}
 			}
 		}
@@ -556,7 +573,7 @@ void CItems::OnRender()
 						continue;
 				}
 			}
-			RenderProjectile(&Data, Item.m_Id, ScreenRectProjectile);
+			RenderProjectile(&Data, Item.m_Id, ScreenRectProjectile, !WclRender);
 		}
 		else if(Item.m_Type == NETOBJTYPE_PICKUP || Item.m_Type == NETOBJTYPE_DDNETPICKUP)
 		{
@@ -575,7 +592,7 @@ void CItems::OnRender()
 			}
 			const void *pPrev = Client()->SnapFindItem(IClient::SNAP_PREV, Item.m_Type, Item.m_Id);
 			if(pPrev)
-				RenderPickup((const CNetObj_Pickup *)pPrev, (const CNetObj_Pickup *)pData, false, Data.m_Flags);
+				RenderPickup((const CNetObj_Pickup *)pPrev, (const CNetObj_Pickup *)pData, false, Data.m_Flags, ScreenRectPickup, !WclRender);
 		}
 		else if(Item.m_Type == NETOBJTYPE_LASER || Item.m_Type == NETOBJTYPE_DDNETLASER)
 		{
