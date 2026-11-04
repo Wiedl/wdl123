@@ -1135,6 +1135,7 @@ inline bool CPlayers::IsPlayerInfoAvailable(int ClientId) const
 
 void CPlayers::OnRender()
 {
+	m_RenderInfoValid = false;
 	OnRenderInternal(false);
 }
 
@@ -1148,76 +1149,82 @@ void CPlayers::OnRenderInternal(bool WclRender, const CScreenRect *pScreenRect)
 	if(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
 		return;
 
-	// update render info for ninja
-	CTeeRenderInfo aRenderInfo[MAX_CLIENTS];
-	const bool IsTeamPlay = GameClient()->IsTeamPlay();
-	for(int i = 0; i < MAX_CLIENTS; ++i)
+	// The normal pass prepares this data before WCL is rendered. Reuse it
+	// instead of copying and rebuilding all player render info a second time.
+	auto &aRenderInfo = m_aRenderInfo;
+	if(!WclRender || !m_RenderInfoValid)
 	{
-		aRenderInfo[i] = GameClient()->m_aClients[i].m_RenderInfo;
-		aRenderInfo[i].m_TeeRenderFlags = 0;
-
-		// predict freeze skin only for local players
-		bool Frozen = false;
-		if(i == GameClient()->m_aLocalIds[0] || i == GameClient()->m_aLocalIds[1])
+		const bool IsTeamPlay = GameClient()->IsTeamPlay();
+		for(int i = 0; i < MAX_CLIENTS; ++i)
 		{
-			if(GameClient()->m_aClients[i].m_Predicted.m_FreezeEnd != 0)
-				aRenderInfo[i].m_TeeRenderFlags |= TEE_EFFECT_FROZEN | TEE_NO_WEAPON;
-			if(GameClient()->m_aClients[i].m_Predicted.m_LiveFrozen)
-				aRenderInfo[i].m_TeeRenderFlags |= TEE_EFFECT_FROZEN;
-			if(GameClient()->m_aClients[i].m_Predicted.m_Invincible)
-				aRenderInfo[i].m_TeeRenderFlags |= TEE_EFFECT_SPARKLE;
+			aRenderInfo[i] = GameClient()->m_aClients[i].m_RenderInfo;
+			aRenderInfo[i].m_TeeRenderFlags = 0;
 
-			Frozen = GameClient()->m_aClients[i].m_Predicted.m_FreezeEnd != 0;
-			// TClient
-			if(g_Config.m_TcFastInput)
-				Frozen = GameClient()->m_aClients[i].m_RegularPredicted.m_FreezeEnd != 0;
-		}
-		else
-		{
-			if(GameClient()->m_aClients[i].m_FreezeEnd != 0)
-				aRenderInfo[i].m_TeeRenderFlags |= TEE_EFFECT_FROZEN | TEE_NO_WEAPON;
-			if(GameClient()->m_aClients[i].m_LiveFrozen)
-				aRenderInfo[i].m_TeeRenderFlags |= TEE_EFFECT_FROZEN;
-			if(GameClient()->m_aClients[i].m_Invincible)
-				aRenderInfo[i].m_TeeRenderFlags |= TEE_EFFECT_SPARKLE;
-
-			Frozen = GameClient()->m_Snap.m_aCharacters[i].m_HasExtendedData && GameClient()->m_Snap.m_aCharacters[i].m_ExtendedData.m_FreezeEnd != 0;
-		}
-
-		// TClient
-		if(g_Config.m_TcFrozenKatana > 0 && Frozen)
-		{
-			GameClient()->m_aClients[i].m_RenderCur.m_Weapon = WEAPON_NINJA;
-			aRenderInfo[i].m_TeeRenderFlags &= ~TEE_NO_WEAPON;
-		}
-
-		if((GameClient()->m_aClients[i].m_RenderCur.m_Weapon == WEAPON_NINJA || (Frozen && !GameClient()->m_GameInfo.m_NoSkinChangeForFrozen)) && g_Config.m_ClShowNinja)
-		{
-			// change the skin for the player to the ninja
-			aRenderInfo[i].m_aSixup[g_Config.m_ClDummy].Reset();
-			aRenderInfo[i].ApplySkin(NinjaTeeRenderInfo()->TeeRenderInfo());
-			aRenderInfo[i].m_CustomColoredSkin = IsTeamPlay;
-			if(!IsTeamPlay)
+			// predict freeze skin only for local players
+			bool Frozen = false;
+			if(i == GameClient()->m_aLocalIds[0] || i == GameClient()->m_aLocalIds[1])
 			{
-				aRenderInfo[i].m_ColorBody = ColorRGBA(1, 1, 1);
-				aRenderInfo[i].m_ColorFeet = ColorRGBA(1, 1, 1);
+				if(GameClient()->m_aClients[i].m_Predicted.m_FreezeEnd != 0)
+					aRenderInfo[i].m_TeeRenderFlags |= TEE_EFFECT_FROZEN | TEE_NO_WEAPON;
+				if(GameClient()->m_aClients[i].m_Predicted.m_LiveFrozen)
+					aRenderInfo[i].m_TeeRenderFlags |= TEE_EFFECT_FROZEN;
+				if(GameClient()->m_aClients[i].m_Predicted.m_Invincible)
+					aRenderInfo[i].m_TeeRenderFlags |= TEE_EFFECT_SPARKLE;
 
-				if(g_Config.m_TcColorFreeze)
+				Frozen = GameClient()->m_aClients[i].m_Predicted.m_FreezeEnd != 0;
+				// TClient
+				if(g_Config.m_TcFastInput)
+					Frozen = GameClient()->m_aClients[i].m_RegularPredicted.m_FreezeEnd != 0;
+			}
+			else
+			{
+				if(GameClient()->m_aClients[i].m_FreezeEnd != 0)
+					aRenderInfo[i].m_TeeRenderFlags |= TEE_EFFECT_FROZEN | TEE_NO_WEAPON;
+				if(GameClient()->m_aClients[i].m_LiveFrozen)
+					aRenderInfo[i].m_TeeRenderFlags |= TEE_EFFECT_FROZEN;
+				if(GameClient()->m_aClients[i].m_Invincible)
+					aRenderInfo[i].m_TeeRenderFlags |= TEE_EFFECT_SPARKLE;
+
+				Frozen = GameClient()->m_Snap.m_aCharacters[i].m_HasExtendedData && GameClient()->m_Snap.m_aCharacters[i].m_ExtendedData.m_FreezeEnd != 0;
+			}
+
+			// TClient
+			if(g_Config.m_TcFrozenKatana > 0 && Frozen)
+			{
+				GameClient()->m_aClients[i].m_RenderCur.m_Weapon = WEAPON_NINJA;
+				aRenderInfo[i].m_TeeRenderFlags &= ~TEE_NO_WEAPON;
+			}
+
+			if((GameClient()->m_aClients[i].m_RenderCur.m_Weapon == WEAPON_NINJA || (Frozen && !GameClient()->m_GameInfo.m_NoSkinChangeForFrozen)) && g_Config.m_ClShowNinja)
+			{
+				// change the skin for the player to the ninja
+				aRenderInfo[i].m_aSixup[g_Config.m_ClDummy].Reset();
+				aRenderInfo[i].ApplySkin(NinjaTeeRenderInfo()->TeeRenderInfo());
+				aRenderInfo[i].m_CustomColoredSkin = IsTeamPlay;
+				if(!IsTeamPlay)
 				{
-					bool CustomColor = GameClient()->m_aClients[i].m_RenderInfo.m_CustomColoredSkin;
-					aRenderInfo[i].m_CustomColoredSkin = true;
+					aRenderInfo[i].m_ColorBody = ColorRGBA(1, 1, 1);
+					aRenderInfo[i].m_ColorFeet = ColorRGBA(1, 1, 1);
 
-					aRenderInfo[i].m_ColorFeet = g_Config.m_TcColorFreezeFeet ? GameClient()->m_aClients[i].m_RenderInfo.m_ColorFeet : ColorRGBA(1, 1, 1);
-					float Darken = (g_Config.m_TcColorFreezeDarken / 100.0f) * 0.5f + 0.5f;
+					if(g_Config.m_TcColorFreeze)
+					{
+						bool CustomColor = GameClient()->m_aClients[i].m_RenderInfo.m_CustomColoredSkin;
+						aRenderInfo[i].m_CustomColoredSkin = true;
 
-					aRenderInfo[i].m_ColorBody = GameClient()->m_aClients[i].m_RenderInfo.m_ColorBody;
-					if(!CustomColor)
-						aRenderInfo[i].m_ColorBody = GameClient()->m_aClients[i].m_RenderInfo.m_BloodColor;
+						aRenderInfo[i].m_ColorFeet = g_Config.m_TcColorFreezeFeet ? GameClient()->m_aClients[i].m_RenderInfo.m_ColorFeet : ColorRGBA(1, 1, 1);
+						float Darken = (g_Config.m_TcColorFreezeDarken / 100.0f) * 0.5f + 0.5f;
 
-					aRenderInfo[i].m_ColorBody = ColorRGBA(aRenderInfo[i].m_ColorBody.r * Darken, aRenderInfo[i].m_ColorBody.g * Darken, aRenderInfo[i].m_ColorBody.b * Darken, 1.0);
+						aRenderInfo[i].m_ColorBody = GameClient()->m_aClients[i].m_RenderInfo.m_ColorBody;
+						if(!CustomColor)
+							aRenderInfo[i].m_ColorBody = GameClient()->m_aClients[i].m_RenderInfo.m_BloodColor;
+
+						aRenderInfo[i].m_ColorBody = ColorRGBA(aRenderInfo[i].m_ColorBody.r * Darken, aRenderInfo[i].m_ColorBody.g * Darken, aRenderInfo[i].m_ColorBody.b * Darken, 1.0);
+					}
 				}
 			}
 		}
+
+		m_RenderInfoValid = true;
 	}
 
 	// get screen edges to avoid rendering offscreen
