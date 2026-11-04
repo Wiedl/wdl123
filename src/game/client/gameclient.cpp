@@ -1097,6 +1097,9 @@ void CGameClient::RenderWcl()
 	{
 		m_NamePlates.RenderNamePlateGame(m_aClients[TargetClientId].m_RenderPos,
 			m_Snap.m_apPlayerInfos[TargetClientId], 1.0f);
+		// Nameplate text setup temporarily switches to interface coordinates.
+		// Restore the independent WCL camera before ending the PiP pass.
+		Graphics()->MapScreen(WclScreenRect);
 	}
 
 	Graphics()->ClipPop();
