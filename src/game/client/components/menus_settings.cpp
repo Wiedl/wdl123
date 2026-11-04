@@ -188,6 +188,21 @@ void CMenus::RenderSettingsWcl(CUIRect MainView)
 	DoButton_CheckBoxAutoVMarginAndSet(&s_WclWorldId, Localize("Show map and game world"), &g_Config.m_ClWclShowWorld, &MainView, 20.0f);
 	DoButton_CheckBoxAutoVMarginAndSet(&s_WclPlayersId, Localize("Show other players"), &g_Config.m_ClWclShowPlayers, &MainView, 20.0f);
 	DoButton_CheckBoxAutoVMarginAndSet(&s_WclExtendedRangeId, Localize("Full-map tracking range"), &g_Config.m_ClWclExtendedRange, &MainView, 20.0f);
+
+	// Reuse the existing friend-message color setting so it stays consistent
+	// with chat logs and the friend marker, and expose it on the WCL page.
+	static CButtonContainer s_WclFriendMessageColor;
+	const unsigned int PreviousFriendMessageColor = g_Config.m_ClMessageFriendColor;
+	const int PreviousFriendMessageEnabled = g_Config.m_ClMessageFriend;
+	DoLine_ColorPicker(&s_WclFriendMessageColor, 25.0f, 13.0f, 5.0f, &MainView,
+		Localize("Friend messages"), &g_Config.m_ClMessageFriendColor,
+		ColorRGBA(1.0f, 0.137f, 0.137f), true, &g_Config.m_ClMessageFriend);
+	if(PreviousFriendMessageColor != g_Config.m_ClMessageFriendColor ||
+		PreviousFriendMessageEnabled != g_Config.m_ClMessageFriend)
+	{
+		GameClient()->m_Chat.RebuildChat();
+	}
+
 	Ui()->DoLabel(&MainView, Localize("Target player"), 14.0f, TEXTALIGN_TL);
 	MainView.HSplitTop(22.0f, nullptr, &MainView);
 	MainView.HSplitTop(22.0f, &Slider, &MainView);
