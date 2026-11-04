@@ -59,16 +59,16 @@ void CHud::ResetHudEditorLayout()
 {
 	g_Config.m_ClHudStatusPosX = 0;
 	g_Config.m_ClHudStatusPosY = 0;
-	g_Config.m_ClHudStatusScale = 1000;
+	g_Config.m_ClHudStatusScale = 100;
 	g_Config.m_ClHudTimerPosX = 0;
 	g_Config.m_ClHudTimerPosY = 0;
-	g_Config.m_ClHudTimerScale = 1000;
+	g_Config.m_ClHudTimerScale = 100;
 	g_Config.m_ClHudRightPosX = 0;
 	g_Config.m_ClHudRightPosY = 0;
-	g_Config.m_ClHudRightScale = 1000;
+	g_Config.m_ClHudRightScale = 100;
 	g_Config.m_ClHudSpectatorPosX = 0;
 	g_Config.m_ClHudSpectatorPosY = 0;
-	g_Config.m_ClHudSpectatorScale = 1000;
+	g_Config.m_ClHudSpectatorScale = 100;
 	m_HudEditorSelected = -1;
 }
 
@@ -104,13 +104,13 @@ vec2 CHud::GetHudEditorOffset(int Element) const
 	switch(Element)
 	{
 	case HUD_EDITOR_STATUS:
-		return vec2(m_Width * g_Config.m_ClHudStatusPosX / 10000.0f, m_Height * g_Config.m_ClHudStatusPosY / 10000.0f);
+		return vec2(m_Width * g_Config.m_ClHudStatusPosX / 100.0f, m_Height * g_Config.m_ClHudStatusPosY / 100.0f);
 	case HUD_EDITOR_TIMER:
-		return vec2(m_Width * g_Config.m_ClHudTimerPosX / 10000.0f, m_Height * g_Config.m_ClHudTimerPosY / 10000.0f);
+		return vec2(m_Width * g_Config.m_ClHudTimerPosX / 100.0f, m_Height * g_Config.m_ClHudTimerPosY / 100.0f);
 	case HUD_EDITOR_RIGHT:
-		return vec2(m_Width * g_Config.m_ClHudRightPosX / 10000.0f, m_Height * g_Config.m_ClHudRightPosY / 10000.0f);
+		return vec2(m_Width * g_Config.m_ClHudRightPosX / 100.0f, m_Height * g_Config.m_ClHudRightPosY / 100.0f);
 	case HUD_EDITOR_SPECTATOR:
-		return vec2(m_Width * g_Config.m_ClHudSpectatorPosX / 10000.0f, m_Height * g_Config.m_ClHudSpectatorPosY / 10000.0f);
+		return vec2(m_Width * g_Config.m_ClHudSpectatorPosX / 100.0f, m_Height * g_Config.m_ClHudSpectatorPosY / 100.0f);
 	default:
 		return vec2(0.0f, 0.0f);
 	}
@@ -120,10 +120,10 @@ float CHud::GetHudEditorScale(int Element) const
 {
 	switch(Element)
 	{
-	case HUD_EDITOR_STATUS: return g_Config.m_ClHudStatusScale / 1000.0f;
-	case HUD_EDITOR_TIMER: return g_Config.m_ClHudTimerScale / 1000.0f;
-	case HUD_EDITOR_RIGHT: return g_Config.m_ClHudRightScale / 1000.0f;
-	case HUD_EDITOR_SPECTATOR: return g_Config.m_ClHudSpectatorScale / 1000.0f;
+	case HUD_EDITOR_STATUS: return g_Config.m_ClHudStatusScale / 100.0f;
+	case HUD_EDITOR_TIMER: return g_Config.m_ClHudTimerScale / 100.0f;
+	case HUD_EDITOR_RIGHT: return g_Config.m_ClHudRightScale / 100.0f;
+	case HUD_EDITOR_SPECTATOR: return g_Config.m_ClHudSpectatorScale / 100.0f;
 	default: return 1.0f;
 	}
 }
@@ -165,25 +165,25 @@ void CHud::MapScreenWithHudEditorOffset(int Element)
 
 void CHud::UpdateHudEditorOffset(int Element, float DeltaX, float DeltaY)
 {
-	const int OffsetX = (int)std::round(DeltaX / m_Width * 10000.0f);
-	const int OffsetY = (int)std::round(DeltaY / m_Height * 10000.0f);
+	const int OffsetX = (int)std::round(DeltaX / m_Width * 100.0f);
+	const int OffsetY = (int)std::round(DeltaY / m_Height * 100.0f);
 	switch(Element)
 	{
 	case HUD_EDITOR_STATUS:
-		g_Config.m_ClHudStatusPosX = std::clamp(g_Config.m_ClHudStatusPosX + OffsetX, -10000, 10000);
-		g_Config.m_ClHudStatusPosY = std::clamp(g_Config.m_ClHudStatusPosY + OffsetY, -10000, 10000);
+		g_Config.m_ClHudStatusPosX = std::clamp(g_Config.m_ClHudStatusPosX + OffsetX, -100, 100);
+		g_Config.m_ClHudStatusPosY = std::clamp(g_Config.m_ClHudStatusPosY + OffsetY, -100, 100);
 		break;
 	case HUD_EDITOR_TIMER:
-		g_Config.m_ClHudTimerPosX = std::clamp(g_Config.m_ClHudTimerPosX + OffsetX, -10000, 10000);
-		g_Config.m_ClHudTimerPosY = std::clamp(g_Config.m_ClHudTimerPosY + OffsetY, -10000, 10000);
+		g_Config.m_ClHudTimerPosX = std::clamp(g_Config.m_ClHudTimerPosX + OffsetX, -100, 100);
+		g_Config.m_ClHudTimerPosY = std::clamp(g_Config.m_ClHudTimerPosY + OffsetY, -100, 100);
 		break;
 	case HUD_EDITOR_RIGHT:
-		g_Config.m_ClHudRightPosX = std::clamp(g_Config.m_ClHudRightPosX + OffsetX, -10000, 10000);
-		g_Config.m_ClHudRightPosY = std::clamp(g_Config.m_ClHudRightPosY + OffsetY, -10000, 10000);
+		g_Config.m_ClHudRightPosX = std::clamp(g_Config.m_ClHudRightPosX + OffsetX, -100, 100);
+		g_Config.m_ClHudRightPosY = std::clamp(g_Config.m_ClHudRightPosY + OffsetY, -100, 100);
 		break;
 	case HUD_EDITOR_SPECTATOR:
-		g_Config.m_ClHudSpectatorPosX = std::clamp(g_Config.m_ClHudSpectatorPosX + OffsetX, -10000, 10000);
-		g_Config.m_ClHudSpectatorPosY = std::clamp(g_Config.m_ClHudSpectatorPosY + OffsetY, -10000, 10000);
+		g_Config.m_ClHudSpectatorPosX = std::clamp(g_Config.m_ClHudSpectatorPosX + OffsetX, -100, 100);
+		g_Config.m_ClHudSpectatorPosY = std::clamp(g_Config.m_ClHudSpectatorPosY + OffsetY, -100, 100);
 		break;
 	}
 }
@@ -193,16 +193,16 @@ void CHud::ChangeHudEditorScale(int Element, int Delta)
 	switch(Element)
 	{
 	case HUD_EDITOR_STATUS:
-		g_Config.m_ClHudStatusScale = std::clamp(g_Config.m_ClHudStatusScale + Delta, 500, 2000);
+		g_Config.m_ClHudStatusScale = std::clamp(g_Config.m_ClHudStatusScale + Delta, 50, 200);
 		break;
 	case HUD_EDITOR_TIMER:
-		g_Config.m_ClHudTimerScale = std::clamp(g_Config.m_ClHudTimerScale + Delta, 500, 2000);
+		g_Config.m_ClHudTimerScale = std::clamp(g_Config.m_ClHudTimerScale + Delta, 50, 200);
 		break;
 	case HUD_EDITOR_RIGHT:
-		g_Config.m_ClHudRightScale = std::clamp(g_Config.m_ClHudRightScale + Delta, 500, 2000);
+		g_Config.m_ClHudRightScale = std::clamp(g_Config.m_ClHudRightScale + Delta, 50, 200);
 		break;
 	case HUD_EDITOR_SPECTATOR:
-		g_Config.m_ClHudSpectatorScale = std::clamp(g_Config.m_ClHudSpectatorScale + Delta, 500, 2000);
+		g_Config.m_ClHudSpectatorScale = std::clamp(g_Config.m_ClHudSpectatorScale + Delta, 50, 200);
 		break;
 	}
 }
@@ -260,7 +260,7 @@ bool CHud::OnInput(const IInput::CEvent &Event)
 		if(Element >= 0)
 		{
 			m_HudEditorSelected = Element;
-			ChangeHudEditorScale(Element, Event.m_Key == KEY_MOUSE_WHEEL_UP ? 50 : -50);
+			ChangeHudEditorScale(Element, Event.m_Key == KEY_MOUSE_WHEEL_UP ? 5 : -5);
 		}
 		return true;
 	}
