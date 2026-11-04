@@ -1075,6 +1075,16 @@ void CGameClient::RenderWcl()
 	Graphics()->ClipPush();
 	Graphics()->MapScreen(WclScreenRect);
 
+	// Optional CPU-side timing for the independent WCL render pass.
+	static int64_t s_aWclProfileTimes[9] = {};
+	static int s_WclProfileFrames = 0;
+	auto WclProfileStart = [&]() { return g_Config.m_ClWclProfile ? time_get() : 0; };
+	auto WclProfileEnd = [&](int Index, int64_t Start) {
+		if(g_Config.m_ClWclProfile)
+			s_aWclProfileTimes[Index] += time_get() - Start;
+	};
+
+	int64_t WclStageStart = WclProfileStart();
 	if(g_Config.m_ClWclShowWorld)
 	{
 		if(g_Config.m_ClOverlayEntities == 100)
@@ -1087,21 +1097,39 @@ void CGameClient::RenderWcl()
 		{
 			m_MapLayersBackground.RenderWithCamera(Center, Zoom, Aspect, X, Y, Width, Height);
 		}
+		WclProfileEnd(0, WclStageStart);
+		WclStageStart = WclProfileStart();
 		m_Items.OnRenderWcl();
+		WclProfileEnd(1, WclStageStart);
 	}
+	else
+		WclProfileEnd(0, WclStageStart);
 
+	WclStageStart = WclProfileStart();
 	if(g_Config.m_ClWclShowPlayers)
 	{
 		// Render particle trails behind tees, using the independent WCL camera.
 		m_Particles.RenderGroup(CParticles::GROUP_PROJECTILE_TRAIL, ViewRect);
 		m_Particles.RenderGroup(CParticles::GROUP_TRAIL_EXTRA, ViewRect);
+	}
+	WclProfileEnd(2, WclStageStart);
+
+	WclStageStart = WclProfileStart();
+	if(g_Config.m_ClWclShowPlayers)
 		m_Players.OnRenderWcl(ViewRect);
+	WclProfileEnd(3, WclStageStart);
+
+	WclStageStart = WclProfileStart();
+	if(g_Config.m_ClWclShowPlayers)
+	{
 		// Render character and world particles in front of tees, matching the main view order.
 		m_Particles.RenderGroup(CParticles::GROUP_EXPLOSIONS, ViewRect);
 		m_Particles.RenderGroup(CParticles::GROUP_EXTRA, ViewRect);
 		m_Particles.RenderGroup(CParticles::GROUP_GENERAL, ViewRect);
 	}
+	WclProfileEnd(4, WclStageStart);
 
+	WclStageStart = WclProfileStart();
 	if(g_Config.m_ClWclShowWorld)
 	{
 		m_MapLayersForeground.RenderWithCamera(Center, Zoom, Aspect, X, Y, Width, Height);
@@ -1112,6 +1140,9 @@ void CGameClient::RenderWcl()
 		}
 	}
 
+	WclProfileEnd(5, WclStageStart);
+
+	WclStageStart = WclProfileStart();
 	// Render the selected player's standard DDNet nameplate in the PiP camera.
 	if(g_Config.m_ClWclShowPlayers && m_Snap.m_apPlayerInfos[TargetClientId] != nullptr &&
 		m_Snap.m_aCharacters[TargetClientId].m_Active)
@@ -1123,9 +1154,11 @@ void CGameClient::RenderWcl()
 		Graphics()->MapScreen(WclScreenRect);
 	}
 
+	WclProfileEnd(6, WclStageStart);
+
+	WclStageStart = WclProfileStart();
 	// Draw thaw-time bars for every active player visible in the WCL camera.
-	// The PiP clip and independent camera keep bars aligned with each character.
-	if(g_Config.m_ClWclShowPlayers && g_Config.m_ClShowFreezeBars)
+	// The PiP clip and independent camera keep bars aligned with each character. && g_Config.m_ClShowFreezeBars)
 	{
 		CScreenRect FreezeBarCullRect = ViewRect;
 		FreezeBarCullRect.Expand(64.0f);
@@ -1141,9 +1174,12 @@ void CGameClient::RenderWcl()
 		}
 	}
 
+	WclProfileEnd(7, WclStageStart);
+
 	Graphics()->ClipPop();
 	Graphics()->ClipPop();
 
+	WclStageStart = WclProfileStart();
 	Graphics()->MapScreenToSize((float)ScreenWidth, (float)ScreenHeight);
 	Graphics()->TextureClear();
 	Graphics()->BlendNormal();
@@ -1219,6 +1255,22 @@ void CGameClient::RenderWcl()
 		Graphics()->TextureClear();
 	}
 	Graphics()->MapScreen(OriginalScreen);
+	WclProfileEnd(8, WclStageStart);
+
+	if(g_Config.m_ClWclProfile && ++s_WclProfileFrames >= 120)
+	{
+		const double MsPerTick = 1000.0 / (double)time_freq() / s_WclProfileFrames;
+		dbg_msg("wcl_profile", "CPU avg ms/frame over %d frames: map-bg %.3f, items %.3f, trails %.3f, players %.3f, particles %.3f, map-fg %.3f, nameplate %.3f, freeze-bars %.3f, mask+frame %.3f",
+			s_WclProfileFrames,
+			s_aWclProfileTimes[0] * MsPerTick, s_aWclProfileTimes[1] * MsPerTick,
+			s_aWclProfileTimes[2] * MsPerTick, s_aWclProfileTimes[3] * MsPerTick,
+			s_aWclProfileTimes[4] * MsPerTick, s_aWclProfileTimes[5] * MsPerTick,
+			s_aWclProfileTimes[6] * MsPerTick, s_aWclProfileTimes[7] * MsPerTick,
+			s_aWclProfileTimes[8] * MsPerTick);
+		for(int64_t &Time : s_aWclProfileTimes)
+			Time = 0;
+		s_WclProfileFrames = 0;
+	}
 }
 
 
