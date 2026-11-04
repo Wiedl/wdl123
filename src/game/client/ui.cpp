@@ -1350,7 +1350,7 @@ float CUi::DoScrollbarV(const void *pId, const CUIRect *pRect, float Current)
 	pRect->Margin(5.0f, &Rail);
 
 	CUIRect Handle;
-	Rail.HSplitTop(std::clamp(33.0f, Rail.w, Rail.h / 3.0f), &Handle, nullptr);
+	Rail.HSplitTop(std::clamp(33.0f, 0.0f, std::max(0.0f, Rail.h)), &Handle, nullptr);
 	Handle.y = Rail.y + (Rail.h - Handle.h) * Current;
 
 	// logic
@@ -1423,7 +1423,7 @@ float CUi::DoScrollbarH(const void *pId, const CUIRect *pRect, float Current, co
 		pRect->HMargin(5.0f, &Rail);
 
 	CUIRect Handle;
-	Rail.VSplitLeft(pColorInner ? 8.0f : std::clamp(33.0f, Rail.h, Rail.w / 3.0f), &Handle, nullptr);
+	Rail.VSplitLeft(pColorInner ? 8.0f : std::clamp(33.0f, 0.0f, std::max(0.0f, Rail.w)), &Handle, nullptr);
 	Handle.x += (Rail.w - Handle.w) * Current;
 
 	CUIRect HandleArea = Handle;
