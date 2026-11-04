@@ -111,7 +111,7 @@ public:
 		{
 			// Create text at standard zoom
 			CScreenRect ScreenRect = This.Graphics()->GetScreen();
-			This.Graphics()->MapScreenToInterface(CameraCenter.x, CameraCenter.y);
+			This.Graphics()->MapScreenToInterface(This.m_Camera.m_Center.x, This.m_Camera.m_Center.y);
 			This.TextRender()->DeleteTextContainer(m_TextContainerIndex);
 			UpdateText(This, Data);
 			This.Graphics()->MapScreen(ScreenRect);
@@ -841,7 +841,7 @@ public:
 	CNamePlate m_aNamePlates[MAX_CLIENTS];
 };
 
-void CNamePlates::RenderNamePlateGame(vec2 Position, const CNetObj_PlayerInfo *pPlayerInfo, float Alpha, vec2 CameraCenter)
+void CNamePlates::RenderNamePlateGame(vec2 Position, const CNetObj_PlayerInfo *pPlayerInfo, float Alpha)
 {
 	// Get screen edges to avoid rendering offscreen
 	CScreenRect ScreenRect = Graphics()->GetScreen();
