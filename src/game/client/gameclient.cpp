@@ -962,15 +962,18 @@ void CGameClient::RenderWcl()
 	if(TargetClientId == -1)
 	{
 		float BestDistance = 1.0e30f;
+		const bool IsFreeView = m_Snap.m_SpecInfo.m_Active && m_Snap.m_SpecInfo.m_SpectatorId == SPEC_FREEVIEW;
 		const bool HasLocalPosition = in_range(LocalClientId, MAX_CLIENTS - 1) &&
 					      m_Snap.m_aCharacters[LocalClientId].m_Active;
-		const vec2 LocalPosition = HasLocalPosition ? m_aClients[LocalClientId].m_RenderPos : vec2(0.0f, 0.0f);
+		const vec2 LocalPosition = IsFreeView ? m_Camera.m_Center :
+			(HasLocalPosition ? m_aClients[LocalClientId].m_RenderPos : vec2(0.0f, 0.0f));
+		const bool HasReferencePosition = IsFreeView || HasLocalPosition;
 		for(int ClientId = 0; ClientId < MAX_CLIENTS; ++ClientId)
 		{
 			if(!IsValidTarget(ClientId))
 				continue;
 			float Distance = (float)ClientId;
-			if(HasLocalPosition)
+			if(HasReferencePosition)
 			{
 				const vec2 Delta = m_aClients[ClientId].m_RenderPos - LocalPosition;
 				Distance = Delta.x * Delta.x + Delta.y * Delta.y;
@@ -1009,7 +1012,6 @@ void CGameClient::RenderWcl()
 	const int Y = Margin + (ScreenHeight - Margin * 2 - Height) * std::clamp(g_Config.m_ClWclPosY, 0, 100) / 100;
 	const float Aspect = (float)Width / (float)Height;
 	const float Zoom = std::clamp(g_Config.m_ClWclZoom / 50.0f, 0.2f, 2.0f);
-	const vec2 Center = m_aClients[TargetClientId].m_RenderPos;
 
 	const CScreenRect ViewRect = Graphics()->MapScreenToWorld(Center.x, Center.y, 100.0f, 100.0f, 100.0f,
 		0.0f, 0.0f, Aspect, Zoom);
@@ -1075,6 +1077,20 @@ void CGameClient::RenderWcl()
 	Graphics()->DrawRect(X - 2.0f, Y, 1.0f, Height, FrameColor, 0, 0.0f);
 	Graphics()->DrawRect(X + Width + 1.0f, Y, 1.0f, Height, FrameColor, 0, 0.0f);
 	Graphics()->MapScreen(OriginalScreen);
+}
+
+bool CGameClient::WclGetNetworkTargetPosition(vec2 &Position) const
+{
+	if(!g_Config.m_ClWclEnable || !m_WclHasLastTargetPos ||
+		!m_Snap.m_SpecInfo.m_Active || m_Snap.m_SpecInfo.m_SpectatorId != SPEC_FREEVIEW)
+		return false;
+
+	if(!in_range(m_WclLastTargetId, MAX_CLIENTS - 1) ||
+		m_Snap.m_apPlayerInfos[m_WclLastTargetId] == nullptr)
+		return false;
+
+	Position = m_WclLastTargetPos;
+	return true;
 }
 
 void CGameClient::OnDummyDisconnect()
