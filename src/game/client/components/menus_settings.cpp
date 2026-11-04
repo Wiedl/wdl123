@@ -175,6 +175,7 @@ void CMenus::RenderSettings(CUIRect MainView)
 
 void CMenus::RenderSettingsWcl(CUIRect MainView)
 {
+	CUIRect Slider;
 	Ui()->DoLabel(&MainView, "WCL - Picture in Picture", 20.0f, TEXTALIGN_TL);
 	MainView.HSplitTop(35.0f, nullptr, &MainView);
 	static int s_WclEnableId, s_WclWorldId, s_WclPlayersId;
@@ -183,20 +184,26 @@ void CMenus::RenderSettingsWcl(CUIRect MainView)
 	DoButton_CheckBoxAutoVMarginAndSet(&s_WclPlayersId, Localize("Show other players"), &g_Config.m_ClWclShowPlayers, &MainView, 20.0f);
 	Ui()->DoLabel(&MainView, Localize("Target player client ID (-1: automatic)"), 14.0f, TEXTALIGN_TL);
 	MainView.HSplitTop(22.0f, nullptr, &MainView);
-	DoSliderWithScaledValue(&g_Config.m_ClWclPlayerId, &g_Config.m_ClWclPlayerId, &MainView, "Player ID", -1, 63, 1, &CUi::ms_LinearScrollbarScale);
+	MainView.HSplitTop(22.0f, &Slider, &MainView);
+	DoSliderWithScaledValue(&g_Config.m_ClWclPlayerId, &g_Config.m_ClWclPlayerId, &Slider, "Player ID", -1, 63, 1, &CUi::ms_LinearScrollbarScale);
 	Ui()->DoLabel(&MainView, Localize("Window size"), 14.0f, TEXTALIGN_TL);
 	MainView.HSplitTop(22.0f, nullptr, &MainView);
-	DoSliderWithScaledValue(&g_Config.m_ClWclWidth, &g_Config.m_ClWclWidth, &MainView, "Width", 120, 640, 1, &CUi::ms_LinearScrollbarScale);
+	MainView.HSplitTop(22.0f, &Slider, &MainView);
+	DoSliderWithScaledValue(&g_Config.m_ClWclWidth, &g_Config.m_ClWclWidth, &Slider, "Width", 120, 640, 1, &CUi::ms_LinearScrollbarScale);
 	MainView.HSplitTop(22.0f, nullptr, &MainView);
-	DoSliderWithScaledValue(&g_Config.m_ClWclHeight, &g_Config.m_ClWclHeight, &MainView, "Height", 70, 400, 1, &CUi::ms_LinearScrollbarScale);
+	MainView.HSplitTop(22.0f, &Slider, &MainView);
+	DoSliderWithScaledValue(&g_Config.m_ClWclHeight, &g_Config.m_ClWclHeight, &Slider, "Height", 70, 400, 1, &CUi::ms_LinearScrollbarScale);
 	Ui()->DoLabel(&MainView, Localize("Window position"), 14.0f, TEXTALIGN_TL);
 	MainView.HSplitTop(22.0f, nullptr, &MainView);
-	DoSliderWithScaledValue(&g_Config.m_ClWclPosX, &g_Config.m_ClWclPosX, &MainView, "Horizontal", 0, 100, 1, &CUi::ms_LinearScrollbarScale);
+	MainView.HSplitTop(22.0f, &Slider, &MainView);
+	DoSliderWithScaledValue(&g_Config.m_ClWclPosX, &g_Config.m_ClWclPosX, &Slider, "Horizontal", 0, 100, 1, &CUi::ms_LinearScrollbarScale);
 	MainView.HSplitTop(22.0f, nullptr, &MainView);
-	DoSliderWithScaledValue(&g_Config.m_ClWclPosY, &g_Config.m_ClWclPosY, &MainView, "Vertical", 0, 100, 1, &CUi::ms_LinearScrollbarScale);
+	MainView.HSplitTop(22.0f, &Slider, &MainView);
+	DoSliderWithScaledValue(&g_Config.m_ClWclPosY, &g_Config.m_ClWclPosY, &Slider, "Vertical", 0, 100, 1, &CUi::ms_LinearScrollbarScale);
 	Ui()->DoLabel(&MainView, Localize("Camera zoom"), 14.0f, TEXTALIGN_TL);
 	MainView.HSplitTop(22.0f, nullptr, &MainView);
-	DoSliderWithScaledValue(&g_Config.m_ClWclZoom, &g_Config.m_ClWclZoom, &MainView, "Zoom", 10, 100, 1, &CUi::ms_LinearScrollbarScale);
+	MainView.HSplitTop(22.0f, &Slider, &MainView);
+	DoSliderWithScaledValue(&g_Config.m_ClWclZoom, &g_Config.m_ClWclZoom, &Slider, "Zoom", 10, 100, 1, &CUi::ms_LinearScrollbarScale);
 }
 bool CMenus::RenderHslaScrollbars(CUIRect *pRect, unsigned int *pColor, bool Alpha, float DarkestLight)
 {
