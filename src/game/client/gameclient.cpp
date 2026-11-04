@@ -926,6 +926,8 @@ void CGameClient::RenderWcl()
 	auto IsValidTarget = [&](int ClientId) {
 		return in_range(ClientId, MAX_CLIENTS - 1) &&
 		       ClientId != LocalClientId &&
+		       ClientId != m_aLocalIds[0] &&
+		       ClientId != m_aLocalIds[1] &&
 		       m_aClients[ClientId].m_Active &&
 		       m_Snap.m_aCharacters[ClientId].m_Active &&
 		       m_Snap.m_apPrevPlayerInfos[ClientId] != nullptr &&
