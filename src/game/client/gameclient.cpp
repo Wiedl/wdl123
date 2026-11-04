@@ -1079,7 +1079,16 @@ void CGameClient::RenderWcl()
 	}
 
 	if(g_Config.m_ClWclShowPlayers)
+	{
+		// Render particle trails behind tees, using the independent WCL camera.
+		m_Particles.RenderGroup(CParticles::GROUP_PROJECTILE_TRAIL);
+		m_Particles.RenderGroup(CParticles::GROUP_TRAIL_EXTRA);
 		m_Players.OnRender();
+		// Render character and world particles in front of tees, matching the main view order.
+		m_Particles.RenderGroup(CParticles::GROUP_EXPLOSIONS);
+		m_Particles.RenderGroup(CParticles::GROUP_EXTRA);
+		m_Particles.RenderGroup(CParticles::GROUP_GENERAL);
+	}
 
 	if(g_Config.m_ClWclShowWorld)
 	{
