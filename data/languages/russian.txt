@@ -2790,3 +2790,9 @@ Terminal
 
 Tactical
 == Тактическая
+
+Show frame
+== Показывать рамку
+
+Corner radius
+== Радиус скругления
