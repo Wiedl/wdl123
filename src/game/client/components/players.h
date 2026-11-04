@@ -22,7 +22,8 @@ class CPlayers : public CComponent
 		const CTeeRenderInfo *pRenderInfo,
 		int ClientId,
 		float Intra = 0.f,
-		bool RenderGhost = false);
+		bool RenderGhost = false,
+		bool WclRender = false);
 
 	void RenderHook(
 		const CScreenRect &ScreenRect,
@@ -41,6 +42,7 @@ class CPlayers : public CComponent
 	int m_WeaponEmoteQuadContainerIndex;
 	int m_aWeaponSpriteMuzzleQuadContainerIndex[NUM_WEAPONS];
 
+	void OnRenderInternal(bool WclRender);
 	void CreateNinjaTeeRenderInfo();
 	void CreateSpectatorTeeRenderInfo();
 
@@ -57,6 +59,7 @@ public:
 	int Sizeof() const override { return sizeof(*this); }
 	void OnInit() override;
 	void OnRender() override;
+	void OnRenderWcl();
 
 	const std::shared_ptr<CManagedTeeRenderInfo> &NinjaTeeRenderInfo() const { return m_pNinjaTeeRenderInfo; }
 	const std::shared_ptr<CManagedTeeRenderInfo> &SpectatorTeeRenderInfo() const { return m_pSpectatorTeeRenderInfo; }
