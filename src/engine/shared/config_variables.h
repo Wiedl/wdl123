@@ -69,7 +69,7 @@ MACRO_CONFIG_INT(ClEnablePingColor, cl_enable_ping_color, 1, 0, 1, CFGFLAG_CLIEN
 MACRO_CONFIG_INT(ClAutoswitchWeapons, cl_autoswitch_weapons, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Auto switch weapon on pickup")
 MACRO_CONFIG_INT(ClAutoswitchWeaponsOutOfAmmo, cl_autoswitch_weapons_out_of_ammo, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Auto switch weapon when out of ammo")
 
-MACRO_CONFIG_INT(ClWclEnable, cl_wcl_enable, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable WCL teammate picture-in-picture window")
+MACRO_CONFIG_INT(ClWclEnable, cl_wcl_enable, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable WCL teammate picture-in-picture window")
 MACRO_CONFIG_INT(ClWclShowWorld, cl_wcl_show_world, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Render the map and game world in the WCL window")
 MACRO_CONFIG_INT(ClWclShowPlayers, cl_wcl_show_players, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Render players in the WCL window")
 MACRO_CONFIG_INT(ClWclPlayerId, cl_wcl_player_id, -1, -1, 63, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Player client ID to follow in the WCL window; -1 selects automatically")
