@@ -195,7 +195,7 @@ void CMenus::RenderSettingsWcl(CUIRect MainView)
 	const unsigned int PreviousFriendMessageColor = g_Config.m_ClMessageFriendColor;
 	const int PreviousFriendMessageEnabled = g_Config.m_ClMessageFriend;
 	DoLine_ColorPicker(&s_WclFriendMessageColor, 25.0f, 13.0f, 5.0f, &MainView,
-		Localize("Friend messages"), &g_Config.m_ClMessageFriendColor,
+		Localize("Friend message"), &g_Config.m_ClMessageFriendColor,
 		ColorRGBA(1.0f, 0.137f, 0.137f), true, &g_Config.m_ClMessageFriend);
 	if(PreviousFriendMessageColor != g_Config.m_ClMessageFriendColor ||
 		PreviousFriendMessageEnabled != g_Config.m_ClMessageFriend)
