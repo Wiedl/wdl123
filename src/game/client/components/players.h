@@ -42,7 +42,7 @@ class CPlayers : public CComponent
 	int m_WeaponEmoteQuadContainerIndex;
 	int m_aWeaponSpriteMuzzleQuadContainerIndex[NUM_WEAPONS];
 
-	void OnRenderInternal(bool WclRender);
+	void OnRenderInternal(bool WclRender, const CScreenRect *pScreenRect = nullptr);
 	void CreateNinjaTeeRenderInfo();
 	void CreateSpectatorTeeRenderInfo();
 
@@ -59,7 +59,7 @@ public:
 	int Sizeof() const override { return sizeof(*this); }
 	void OnInit() override;
 	void OnRender() override;
-	void OnRenderWcl();
+	void OnRenderWcl(const CScreenRect &ScreenRect);
 
 	const std::shared_ptr<CManagedTeeRenderInfo> &NinjaTeeRenderInfo() const { return m_pNinjaTeeRenderInfo; }
 	const std::shared_ptr<CManagedTeeRenderInfo> &SpectatorTeeRenderInfo() const { return m_pSpectatorTeeRenderInfo; }
