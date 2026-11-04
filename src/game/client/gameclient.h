@@ -285,7 +285,6 @@ private:
 	int m_WclLastTargetId = -1;
 	int m_WclSelectedClientId = -1;
 	char m_aWclSelectedName[MAX_NAME_LENGTH] = "";
-	IGraphics::CTextureHandle m_WclFrameTexture;
 	vec2 m_WclLastTargetPos = vec2(0.0f, 0.0f);
 	bool m_WclHasLastTargetPos = false;
 
