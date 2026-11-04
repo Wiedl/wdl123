@@ -15,7 +15,7 @@ private:
 	CNamePlatesData *m_pData;
 
 public:
-	void RenderNamePlateGame(vec2 Position, const CNetObj_PlayerInfo *pPlayerInfo, float Alpha, vec2 CameraCenter);
+	void RenderNamePlateGame(vec2 Position, const CNetObj_PlayerInfo *pPlayerInfo, float Alpha);
 	void RenderNamePlatePreview(vec2 Position, int Dummy);
 	void ResetNamePlates();
 	int Sizeof() const override { return sizeof(*this); }
