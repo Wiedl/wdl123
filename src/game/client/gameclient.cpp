@@ -198,8 +198,8 @@ void CGameClient::OnConsoleInit()
 						  &m_BindWheel, // TClient
 						  &m_Emoticon,
 						  &m_ImportantAlert,
+						  &m_Hud, // WDL HUD editor captures input before menus and game controls
 						  &m_Menus,
-						  &m_Hud, // WDL HUD editor captures input while editing
 						  &m_Controls,
 						  &m_TouchControls,
 						  &m_Binds});
