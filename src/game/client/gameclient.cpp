@@ -1258,7 +1258,7 @@ void CGameClient::RenderWcl()
 	Graphics()->MapScreen(OriginalScreen);
 	WclProfileEnd(8, WclStageStart);
 
-	if(g_Config.m_ClWclProfile && ++s_WclProfileFrames >= 120)
+	if(g_Config.m_ClWclProfile && ++s_WclProfileFrames >= 600)
 	{
 		const double MsPerTick = 1000.0 / (double)time_freq() / s_WclProfileFrames;
 		dbg_msg("wcl_profile", "CPU avg ms/frame over %d frames: map-bg %.3f, items %.3f, trails %.3f, players %.3f, particles %.3f, map-fg %.3f, nameplate %.3f, freeze-bars %.3f, mask+frame %.3f",
