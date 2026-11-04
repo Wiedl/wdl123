@@ -1087,7 +1087,7 @@ void CGameClient::RenderWcl()
 		{
 			m_MapLayersBackground.RenderWithCamera(Center, Zoom, Aspect, X, Y, Width, Height);
 		}
-		m_Items.OnRender();
+		m_Items.OnRenderWcl();
 	}
 
 	if(g_Config.m_ClWclShowPlayers)
