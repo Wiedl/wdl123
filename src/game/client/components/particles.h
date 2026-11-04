@@ -6,6 +6,7 @@
 #include <base/vmath.h>
 
 #include <game/client/component.h>
+#include <game/client/render.h>
 
 // particles
 struct CParticle
@@ -102,6 +103,7 @@ private:
 	int64_t m_LastRenderTime = 0;
 
 	void RenderGroup(int Group);
+	void RenderGroup(int Group, const CScreenRect &ScreenRect);
 	void Update(float TimePassed);
 
 	template<int TGROUP>
