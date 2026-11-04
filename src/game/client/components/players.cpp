@@ -1138,12 +1138,12 @@ void CPlayers::OnRender()
 	OnRenderInternal(false);
 }
 
-void CPlayers::OnRenderWcl()
+void CPlayers::OnRenderWcl(const CScreenRect &ScreenRect)
 {
-	OnRenderInternal(true);
+	OnRenderInternal(true, &ScreenRect);
 }
 
-void CPlayers::OnRenderInternal(bool WclRender)
+void CPlayers::OnRenderInternal(bool WclRender, const CScreenRect *pScreenRect)
 {
 	if(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
 		return;
@@ -1221,7 +1221,7 @@ void CPlayers::OnRenderInternal(bool WclRender)
 	}
 
 	// get screen edges to avoid rendering offscreen
-	CScreenRect ScreenRect = Graphics()->GetScreen();
+	CScreenRect ScreenRect = pScreenRect ? *pScreenRect : Graphics()->GetScreen();
 	// expand the edges to prevent popping in/out onscreen
 	//
 	// it is assumed that the tee, all its weapons, and emotes fit into a 200x200 box centered on the tee
