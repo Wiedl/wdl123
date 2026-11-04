@@ -356,6 +356,22 @@ int CControls::SnapInput(int *pData)
 		Send = Send || (GameClient()->m_Snap.m_pLocalCharacter && GameClient()->m_Snap.m_pLocalCharacter->m_Weapon == WEAPON_NINJA && (m_aInputData[g_Config.m_ClDummy].m_Direction || m_aInputData[g_Config.m_ClDummy].m_Jump || m_aInputData[g_Config.m_ClDummy].m_Hook));
 	}
 
+	// In /pause free-camera mode, the server uses the input target as the center
+	// of network clipping. Follow the WCL target with that network-only position
+	// while leaving the actual free camera and its on-screen position untouched.
+	vec2 WclNetworkTarget;
+	if(GameClient()->WclGetNetworkTargetPosition(WclNetworkTarget))
+	{
+		m_aInputData[g_Config.m_ClDummy].m_TargetX = (int)WclNetworkTarget.x;
+		m_aInputData[g_Config.m_ClDummy].m_TargetY = (int)WclNetworkTarget.y;
+		if(!m_aInputData[g_Config.m_ClDummy].m_TargetX && !m_aInputData[g_Config.m_ClDummy].m_TargetY)
+			m_aInputData[g_Config.m_ClDummy].m_TargetX = 1;
+
+		Send = Send ||
+			m_aInputData[g_Config.m_ClDummy].m_TargetX != m_aLastData[g_Config.m_ClDummy].m_TargetX ||
+			m_aInputData[g_Config.m_ClDummy].m_TargetY != m_aLastData[g_Config.m_ClDummy].m_TargetY;
+	}
+
 	// copy and return size
 	m_aLastData[g_Config.m_ClDummy] = m_aInputData[g_Config.m_ClDummy];
 
