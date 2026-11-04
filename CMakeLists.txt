@@ -2169,6 +2169,7 @@ set(EXPECTED_DATA
   themes/winter_day.map
   themes/winter_night.map
   touch_controls.json
+  wcl_frames/wcl_frames.png
   wordlist.txt
   # tidy-alphabetical-end
 )

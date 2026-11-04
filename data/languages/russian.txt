@@ -979,6 +979,12 @@ Full-map tracking range
 Horizontal
 == По горизонтали
 
+Minimal
+== Минималистичная
+
+Neon
+== Неоновая
+
 Picture in Picture
 == Окно в окне
 
@@ -988,8 +994,14 @@ Show map and game world
 Show other players
 == Показывать остальных игроков
 
+Tactical
+== Тактическая
+
 Target player
 == Игрок для наблюдения
+
+Terminal
+== Терминал
 
 Vertical
 == По вертикали
@@ -2741,8 +2753,14 @@ No country flags match your filter criteria
 Picture in Picture
 == Окно в окне
 
+Rounded corners
+== Скруглённые углы
+
 Chat settings
 == Настройки чата
+
+Frame style
+== Стиль рамки
 
 Full-map tracking can significantly increase network traffic.
 == Отслеживание по всей карте может увеличить сетевой трафик.

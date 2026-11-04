@@ -452,6 +452,9 @@ void CGameClient::OnInit()
 		m_Menus.RenderLoading(pLoadingDDNetCaption, pLoadingMessageAssets, 1);
 	}
 
+	// Load the WCL frame atlas once; the selected design is reused every frame.
+	m_WclFrameTexture = Graphics()->LoadTexture("wcl_frames/wcl_frames.png", IStorage::TYPE_ALL);
+
 	m_GameWorld.Init(Collision(), m_aTuningList, &m_MapBugs);
 	OnReset();
 
@@ -1139,11 +1142,38 @@ void CGameClient::RenderWcl()
 	Graphics()->ClipPop();
 
 	Graphics()->MapScreenToSize((float)ScreenWidth, (float)ScreenHeight);
-	const ColorRGBA FrameColor(0.38f, 0.46f, 0.52f, 0.95f);
-	Graphics()->DrawRect(X - 2.0f, Y - 2.0f, Width + 4.0f, 1.0f, FrameColor, 0, 0.0f);
-	Graphics()->DrawRect(X - 2.0f, Y + Height + 1.0f, Width + 4.0f, 1.0f, FrameColor, 0, 0.0f);
-	Graphics()->DrawRect(X - 2.0f, Y, 1.0f, Height, FrameColor, 0, 0.0f);
-	Graphics()->DrawRect(X + Width + 1.0f, Y, 1.0f, Height, FrameColor, 0, 0.0f);
+	if(m_WclFrameTexture.IsValid())
+	{
+		// Atlas: four frame styles horizontally, square and rounded variants vertically.
+		constexpr float AtlasWidth = 1300.0f;
+		constexpr float AtlasHeight = 398.0f;
+		constexpr float CellWidth = 320.0f;
+		constexpr float CellHeight = 193.0f;
+		constexpr float Gutter = 4.0f;
+		const int FrameStyle = std::clamp(g_Config.m_ClWclFrame, 0, 3);
+		const int RoundedRow = g_Config.m_ClWclRoundedCorners ? 1 : 0;
+		const float CellX = Gutter + FrameStyle * (CellWidth + Gutter);
+		const float CellY = Gutter + RoundedRow * (CellHeight + Gutter);
+		const float U0 = (CellX + 1.0f) / AtlasWidth;
+		const float V0 = (CellY + 1.0f) / AtlasHeight;
+		const float U1 = (CellX + CellWidth - 1.0f) / AtlasWidth;
+		const float V1 = (CellY + CellHeight - 1.0f) / AtlasHeight;
+
+		Graphics()->TextureSet(m_WclFrameTexture);
+		Graphics()->SetColor(ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f));
+		Graphics()->QuadsBegin();
+		Graphics()->QuadsSetSubset(U0, V0, U1, V1);
+		IGraphics::CQuadItem FrameQuad(X - 4.0f, Y - 4.0f, Width + 8.0f, Height + 8.0f);
+		Graphics()->QuadsDrawTL(&FrameQuad, 1);
+		Graphics()->QuadsEnd();
+		Graphics()->TextureClear();
+	}
+	else
+	{
+		const ColorRGBA FrameColor(0.38f, 0.46f, 0.52f, 0.95f);
+		const float Radius = g_Config.m_ClWclRoundedCorners ? 6.0f : 0.0f;
+		Graphics()->DrawRect(X - 2.0f, Y - 2.0f, Width + 4.0f, Height + 4.0f, FrameColor, IGraphics::CORNER_ALL, Radius);
+	}
 	Graphics()->MapScreen(OriginalScreen);
 }
 
@@ -1541,6 +1571,9 @@ void CGameClient::OnShutdown()
 {
 	for(auto &pComponent : m_vpAll)
 		pComponent->OnShutdown();
+
+	if(m_WclFrameTexture.IsValid())
+		Graphics()->UnloadTexture(&m_WclFrameTexture);
 
 	m_LocalServer.KillServer();
 }

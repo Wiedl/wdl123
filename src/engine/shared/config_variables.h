@@ -79,6 +79,8 @@ MACRO_CONFIG_INT(ClWclHeight, cl_wcl_height, 170, 70, 400, CFGFLAG_CLIENT | CFGF
 MACRO_CONFIG_INT(ClWclPosX, cl_wcl_pos_x, 95, 0, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "WCL window horizontal position in percent")
 MACRO_CONFIG_INT(ClWclPosY, cl_wcl_pos_y, 5, 0, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "WCL window vertical position in percent")
 MACRO_CONFIG_INT(ClWclZoom, cl_wcl_zoom, 50, 10, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "WCL camera zoom")
+MACRO_CONFIG_INT(ClWclFrame, cl_wcl_frame, 0, 0, 3, CFGFLAG_CLIENT | CFGFLAG_SAVE, "WCL picture-in-picture frame style")
+MACRO_CONFIG_INT(ClWclRoundedCorners, cl_wcl_rounded_corners, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Use rounded inner corners for the WCL frame")
 MACRO_CONFIG_INT(ClShowhud, cl_showhud, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show ingame HUD")
 MACRO_CONFIG_INT(ClShowhudHealthAmmo, cl_showhud_healthammo, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show ingame HUD (Health + Ammo)")
 MACRO_CONFIG_INT(ClShowhudScore, cl_showhud_score, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show ingame HUD (Score)")

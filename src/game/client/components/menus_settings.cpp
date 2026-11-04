@@ -221,6 +221,24 @@ void CMenus::RenderSettingsWcl(CUIRect MainView)
 	DoButton_CheckBoxAutoVMarginAndSet(&s_WclPlayersId, Localize("Show other players"), &g_Config.m_ClWclShowPlayers, &MainView, 20.0f);
 	DoButton_CheckBoxAutoVMarginAndSet(&s_WclExtendedRangeId, Localize("Full-map tracking range"), &g_Config.m_ClWclExtendedRange, &MainView, 20.0f);
 
+	Ui()->DoLabel(&MainView, Localize("Frame style"), 14.0f, TEXTALIGN_TL);
+	MainView.HSplitTop(22.0f, nullptr, &MainView);
+	MainView.HSplitTop(22.0f, &Slider, &MainView);
+	static CUi::SDropDownState s_WclFrameStyleDropDown;
+	static CScrollRegion s_WclFrameStyleScrollRegion;
+	s_WclFrameStyleDropDown.m_SelectionPopupContext.m_pScrollRegion = &s_WclFrameStyleScrollRegion;
+	const char *apWclFrameStyles[] = {
+		Localize("Minimal"),
+		Localize("Neon"),
+		Localize("Terminal"),
+		Localize("Tactical")};
+	const int NewFrameStyle = Ui()->DoDropDown(&Slider, g_Config.m_ClWclFrame, apWclFrameStyles, 4, s_WclFrameStyleDropDown);
+	if(NewFrameStyle >= 0 && NewFrameStyle < 4)
+		g_Config.m_ClWclFrame = NewFrameStyle;
+
+	static int s_WclRoundedCornersId;
+	DoButton_CheckBoxAutoVMarginAndSet(&s_WclRoundedCornersId, Localize("Rounded corners"), &g_Config.m_ClWclRoundedCorners, &MainView, 20.0f);
+
 	Ui()->DoLabel(&MainView, Localize("Target player"), 14.0f, TEXTALIGN_TL);
 	MainView.HSplitTop(22.0f, nullptr, &MainView);
 	MainView.HSplitTop(22.0f, &Slider, &MainView);
