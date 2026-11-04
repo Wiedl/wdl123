@@ -957,7 +957,9 @@ void CGameClient::RenderWcl()
 		// A missing character snapshot means the server clipped its position, not that it left.
 		TargetClientId = m_WclLastTargetId;
 	}
-	else
+
+	// If no cached target is available, find the nearest active player.
+	if(TargetClientId == -1)
 	{
 		float BestDistance = 1.0e30f;
 		const bool HasLocalPosition = in_range(LocalClientId, MAX_CLIENTS - 1) &&
