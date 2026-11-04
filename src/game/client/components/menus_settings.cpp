@@ -172,9 +172,10 @@ void CMenus::RenderSettingsWcl(CUIRect MainView)
 {
 	Ui()->DoLabel(&MainView, "WCL - Picture in Picture", 20.0f, TEXTALIGN_TL);
 	MainView.HSplitTop(35.0f, nullptr, &MainView);
-	DoButton_CheckBoxAutoVMarginAndSet(&MainView, Localize("Enable teammate window"), &g_Config.m_ClWclEnable, 20.0f);
-	DoButton_CheckBoxAutoVMarginAndSet(&MainView, Localize("Show map and game world"), &g_Config.m_ClWclShowWorld, 20.0f);
-	DoButton_CheckBoxAutoVMarginAndSet(&MainView, Localize("Show other players"), &g_Config.m_ClWclShowPlayers, 20.0f);
+	static int s_WclEnableId, s_WclWorldId, s_WclPlayersId;
+	DoButton_CheckBoxAutoVMarginAndSet(&s_WclEnableId, Localize("Enable teammate window"), &g_Config.m_ClWclEnable, &MainView, 20.0f);
+	DoButton_CheckBoxAutoVMarginAndSet(&s_WclWorldId, Localize("Show map and game world"), &g_Config.m_ClWclShowWorld, &MainView, 20.0f);
+	DoButton_CheckBoxAutoVMarginAndSet(&s_WclPlayersId, Localize("Show other players"), &g_Config.m_ClWclShowPlayers, &MainView, 20.0f);
 	Ui()->DoLabel(&MainView, Localize("Target player client ID (-1: automatic)"), 14.0f, TEXTALIGN_TL);
 	MainView.HSplitTop(22.0f, nullptr, &MainView);
 	DoSliderWithScaledValue(&g_Config.m_ClWclPlayerId, &g_Config.m_ClWclPlayerId, &MainView, "Player ID", -1, 63, 1, nullptr);
