@@ -563,6 +563,7 @@ protected:
 
 	// found in menus_settings.cpp
 	void RenderSettings(CUIRect MainView);
+	void RenderSettingsWcl(CUIRect MainView);
 	bool RenderHslaScrollbars(CUIRect *pRect, unsigned int *pColor, bool Alpha, float DarkestLight);
 
 	// found in menus_settings_assets.cpp
