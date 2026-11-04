@@ -1088,13 +1088,6 @@ void CGameClient::RenderWcl()
 		m_Particles.RenderGroup(CParticles::GROUP_EXPLOSIONS);
 		m_Particles.RenderGroup(CParticles::GROUP_EXTRA);
 		m_Particles.RenderGroup(CParticles::GROUP_GENERAL);
-		// Draw the selected teammate's thaw-time bar in the WCL camera.
-		if(m_Snap.m_aCharacters[TargetClientId].m_Active &&
-			m_Snap.m_apPrevPlayerInfos[TargetClientId] != nullptr &&
-			m_Snap.m_apPlayerInfos[TargetClientId] != nullptr)
-		{
-			m_FreezeBars.RenderFreezeBar(TargetClientId);
-		}
 	}
 
 	if(g_Config.m_ClWclShowWorld)
@@ -1116,6 +1109,21 @@ void CGameClient::RenderWcl()
 		// Nameplate text setup temporarily switches to interface coordinates.
 		// Restore the independent WCL camera before ending the PiP pass.
 		Graphics()->MapScreen(WclScreenRect);
+	}
+
+	// Draw thaw-time bars for every active player visible in the WCL camera.
+	// The PiP clip and independent camera keep bars aligned with each character.
+	if(g_Config.m_ClWclShowPlayers && g_Config.m_ClShowFreezeBars)
+	{
+		for(int ClientId = 0; ClientId < MAX_CLIENTS; ClientId++)
+		{
+			if(m_Snap.m_aCharacters[ClientId].m_Active &&
+				m_Snap.m_apPrevPlayerInfos[ClientId] != nullptr &&
+				m_Snap.m_apPlayerInfos[ClientId] != nullptr)
+			{
+				m_FreezeBars.RenderFreezeBar(ClientId);
+			}
+		}
 	}
 
 	Graphics()->ClipPop();
