@@ -1091,6 +1091,14 @@ void CGameClient::RenderWcl()
 		}
 	}
 
+	// Render the selected player's standard DDNet nameplate in the PiP camera.
+	if(g_Config.m_ClWclShowPlayers && m_Snap.m_apPlayerInfos[TargetClientId] != nullptr &&
+		m_Snap.m_aCharacters[TargetClientId].m_Active)
+	{
+		m_NamePlates.RenderNamePlateGame(m_aClients[TargetClientId].m_RenderPos,
+			m_Snap.m_apPlayerInfos[TargetClientId], 1.0f, Center);
+	}
+
 	Graphics()->ClipPop();
 	Graphics()->ClipPop();
 
@@ -1101,28 +1109,6 @@ void CGameClient::RenderWcl()
 	Graphics()->DrawRect(X - 2.0f, Y, 1.0f, Height, FrameColor, 0, 0.0f);
 	Graphics()->DrawRect(X + Width + 1.0f, Y, 1.0f, Height, FrameColor, 0, 0.0f);
 	Graphics()->MapScreen(OriginalScreen);
-
-	// Show the followed player's name in the PiP without adding any world-space nameplates.
-	const char *pTargetName = m_aClients[TargetClientId].m_aName;
-	if(pTargetName[0] != '\0')
-	{
-		constexpr float NameFontSize = 14.0f;
-		constexpr float NamePaddingX = 6.0f;
-		constexpr float NamePaddingY = 3.0f;
-		const float NameWidth = std::min(TextRender()->TextWidth(NameFontSize, pTargetName), (float)Width - NamePaddingX * 2.0f);
-		const float NameBoxWidth = std::max(0.0f, NameWidth + NamePaddingX * 2.0f);
-		const float NameBoxHeight = NameFontSize + NamePaddingY * 2.0f;
-		const ColorRGBA OldTextColor = TextRender()->GetTextColor();
-		const ColorRGBA OldTextOutlineColor = TextRender()->GetTextOutlineColor();
-
-		Graphics()->DrawRect(X + 3.0f, Y + 3.0f, NameBoxWidth, NameBoxHeight,
-			ColorRGBA(0.02f, 0.025f, 0.035f, 0.82f), IGraphics::CORNER_ALL, 3.0f);
-		TextRender()->TextColor(ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f));
-		TextRender()->TextOutlineColor(ColorRGBA(0.0f, 0.0f, 0.0f, 0.9f));
-		TextRender()->Text(X + 3.0f + NamePaddingX, Y + 3.0f + NamePaddingY, NameFontSize, pTargetName, (float)Width - NamePaddingX * 2.0f);
-		TextRender()->TextColor(OldTextColor);
-		TextRender()->TextOutlineColor(OldTextOutlineColor);
-	}
 }
 
 
