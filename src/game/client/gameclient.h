@@ -674,6 +674,8 @@ public:
 	// hooks
 	void OnConnected() override;
 	void OnRender() override;
+	// In paused free-camera mode, keep the server's network view centered on the WCL target.
+	bool WclGetNetworkTargetPosition(vec2 &Position) const;
 	void OnUpdate() override;
 	void OnDummyDisconnect() override;
 	virtual void OnRelease();
