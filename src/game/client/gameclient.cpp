@@ -1260,14 +1260,17 @@ void CGameClient::RenderWcl()
 
 	if(g_Config.m_ClWclProfile && ++s_WclProfileFrames >= 600)
 	{
-		const double MsPerTick = 1000.0 / (double)time_freq() / s_WclProfileFrames;
-		dbg_msg("wcl_profile", "CPU avg ms/frame over %d frames: map-bg %.3f, items %.3f, trails %.3f, players %.3f, particles %.3f, map-fg %.3f, nameplate %.3f, freeze-bars %.3f, mask+frame %.3f",
-			s_WclProfileFrames,
-			s_aWclProfileTimes[0] * MsPerTick, s_aWclProfileTimes[1] * MsPerTick,
-			s_aWclProfileTimes[2] * MsPerTick, s_aWclProfileTimes[3] * MsPerTick,
-			s_aWclProfileTimes[4] * MsPerTick, s_aWclProfileTimes[5] * MsPerTick,
-			s_aWclProfileTimes[6] * MsPerTick, s_aWclProfileTimes[7] * MsPerTick,
-			s_aWclProfileTimes[8] * MsPerTick);
+		const double UsPerTick = 1000000.0 / (double)time_freq() / s_WclProfileFrames;
+		int64_t TotalTicks = 0;
+		for(int64_t Time : s_aWclProfileTimes)
+			TotalTicks += Time;
+		dbg_msg("wcl_profile", "CPU avg us/frame over %d frames: total %.3f, map-bg %.3f, items %.3f, trails %.3f, players %.3f, particles %.3f, map-fg %.3f, nameplate %.3f, freeze-bars %.3f, mask+frame %.3f",
+			s_WclProfileFrames, TotalTicks * UsPerTick,
+			s_aWclProfileTimes[0] * UsPerTick, s_aWclProfileTimes[1] * UsPerTick,
+			s_aWclProfileTimes[2] * UsPerTick, s_aWclProfileTimes[3] * UsPerTick,
+			s_aWclProfileTimes[4] * UsPerTick, s_aWclProfileTimes[5] * UsPerTick,
+			s_aWclProfileTimes[6] * UsPerTick, s_aWclProfileTimes[7] * UsPerTick,
+			s_aWclProfileTimes[8] * UsPerTick);
 		for(int64_t &Time : s_aWclProfileTimes)
 			Time = 0;
 		s_WclProfileFrames = 0;
