@@ -76,6 +76,7 @@ void CHud::ResetHudEditorLayout()
 	g_Config.m_ClHudSpectatorScale = 100;
 	m_HudEditorDragging = false;
 	m_HudEditorSelected = -1;
+	ConfigManager()->Save();
 }
 
 void CHud::GetHudEditorBaseRect(int Element, vec2 &Pos, vec2 &Size) const
