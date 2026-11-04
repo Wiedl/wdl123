@@ -1061,8 +1061,12 @@ void CGameClient::RenderWcl()
 	const CScreenRect OriginalScreen = Graphics()->GetScreen();
 	Graphics()->MapScreenToSize((float)ScreenWidth, (float)ScreenHeight);
 	Graphics()->TextureClear();
-	Graphics()->DrawRect(X - 3.0f, Y - 3.0f, Width + 6.0f, Height + 6.0f,
-		ColorRGBA(0.02f, 0.025f, 0.035f, 0.96f), IGraphics::CORNER_ALL, 4.0f);
+	const int CornerRadius = std::clamp(g_Config.m_ClWclCornerRadius, 0, 16);
+	if(g_Config.m_ClWclFrameEnabled)
+	{
+		Graphics()->DrawRect(X - 3.0f, Y - 3.0f, Width + 6.0f, Height + 6.0f,
+			ColorRGBA(0.02f, 0.025f, 0.035f, 0.96f), IGraphics::CORNER_ALL, CornerRadius);
+	}
 	Graphics()->DrawRect(X, Y, Width, Height, ColorRGBA(0.0f, 0.0f, 0.0f, 1.0f), 0, 0.0f);
 
 	Graphics()->ClipPush();
@@ -1142,18 +1146,18 @@ void CGameClient::RenderWcl()
 	Graphics()->ClipPop();
 
 	Graphics()->MapScreenToSize((float)ScreenWidth, (float)ScreenHeight);
-	if(m_WclFrameTexture.IsValid())
+	if(g_Config.m_ClWclFrameEnabled && m_WclFrameTexture.IsValid())
 	{
-		// Atlas: four frame styles horizontally, square and rounded variants vertically.
+		// Atlas: four frame styles horizontally and five adjustable corner radii vertically.
 		constexpr float AtlasWidth = 1300.0f;
-		constexpr float AtlasHeight = 398.0f;
+		constexpr float AtlasHeight = 989.0f;
 		constexpr float CellWidth = 320.0f;
 		constexpr float CellHeight = 193.0f;
 		constexpr float Gutter = 4.0f;
 		const int FrameStyle = std::clamp(g_Config.m_ClWclFrame, 0, 3);
-		const int RoundedRow = g_Config.m_ClWclRoundedCorners ? 1 : 0;
+		const int RadiusRow = CornerRadius / 4;
 		const float CellX = Gutter + FrameStyle * (CellWidth + Gutter);
-		const float CellY = Gutter + RoundedRow * (CellHeight + Gutter);
+		const float CellY = Gutter + RadiusRow * (CellHeight + Gutter);
 		const float U0 = (CellX + 1.0f) / AtlasWidth;
 		const float V0 = (CellY + 1.0f) / AtlasHeight;
 		const float U1 = (CellX + CellWidth - 1.0f) / AtlasWidth;
@@ -1168,11 +1172,12 @@ void CGameClient::RenderWcl()
 		Graphics()->QuadsEnd();
 		Graphics()->TextureClear();
 	}
-	else
+	else if(g_Config.m_ClWclFrameEnabled)
 	{
+		// Fallback if the PNG atlas could not be loaded.
 		const ColorRGBA FrameColor(0.38f, 0.46f, 0.52f, 0.95f);
-		const float Radius = g_Config.m_ClWclRoundedCorners ? 6.0f : 0.0f;
-		Graphics()->DrawRect(X - 2.0f, Y - 2.0f, Width + 4.0f, Height + 4.0f, FrameColor, IGraphics::CORNER_ALL, Radius);
+		Graphics()->DrawRect(X - 2.0f, Y - 2.0f, Width + 4.0f, Height + 4.0f,
+			FrameColor, IGraphics::CORNER_ALL, CornerRadius);
 	}
 	Graphics()->MapScreen(OriginalScreen);
 }
