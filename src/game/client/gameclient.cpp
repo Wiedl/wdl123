@@ -944,24 +944,62 @@ void CGameClient::RenderWcl()
 	};
 
 	int TargetClientId = -1;
-	if(g_Config.m_ClWclPlayerId >= 0)
+	const bool HasTargetName = g_Config.m_ClWclPlayerName[0] != '\0';
+	auto MatchesTargetName = [&](int ClientId) {
+		return in_range(ClientId, MAX_CLIENTS - 1) &&
+		       m_Snap.m_apPlayerInfos[ClientId] != nullptr &&
+		       str_comp_nocase(m_aClients[ClientId].m_aName, g_Config.m_ClWclPlayerName) == 0;
+	};
+
+	if(HasTargetName)
 	{
-		if(IsValidTarget(g_Config.m_ClWclPlayerId))
-			TargetClientId = g_Config.m_ClWclPlayerId;
-		else if(m_WclHasLastTargetPos && m_WclLastTargetId == g_Config.m_ClWclPlayerId &&
-			m_Snap.m_apPlayerInfos[m_WclLastTargetId] != nullptr)
+		// Keep the same client slot while the selected nickname is still present,
+		// even if its character snapshot is temporarily clipped by the server.
+		if(m_WclHasLastTargetPos && MatchesTargetName(m_WclLastTargetId))
 			TargetClientId = m_WclLastTargetId;
+
+		// Otherwise find an active client with the exact requested nickname.
+		// If duplicate nicknames exist, prefer the one nearest the current camera.
+		if(TargetClientId == -1)
+		{
+			float BestDistance = 1.0e30f;
+			const bool IsFreeView = m_Snap.m_SpecInfo.m_Active && m_Snap.m_SpecInfo.m_SpectatorId == SPEC_FREEVIEW;
+			const bool HasLocalPosition = in_range(LocalClientId, MAX_CLIENTS - 1) &&
+						      m_Snap.m_aCharacters[LocalClientId].m_Active;
+			const vec2 LocalPosition = IsFreeView ? m_Camera.m_Center :
+				(HasLocalPosition ? m_aClients[LocalClientId].m_RenderPos : vec2(0.0f, 0.0f));
+			const bool HasReferencePosition = IsFreeView || HasLocalPosition;
+
+			for(int ClientId = 0; ClientId < MAX_CLIENTS; ++ClientId)
+			{
+				if(!IsValidTarget(ClientId) || !MatchesTargetName(ClientId))
+					continue;
+
+				float Distance = (float)ClientId;
+				if(HasReferencePosition)
+				{
+					const vec2 Delta = m_aClients[ClientId].m_RenderPos - LocalPosition;
+					Distance = Delta.x * Delta.x + Delta.y * Delta.y;
+				}
+				if(Distance < BestDistance)
+				{
+					BestDistance = Distance;
+					TargetClientId = ClientId;
+				}
+			}
+		}
 	}
 	else if(m_WclHasLastTargetPos && m_WclLastTargetId >= 0 &&
 		m_Snap.m_apPlayerInfos[m_WclLastTargetId] != nullptr)
 	{
-		// Prefer the previous target so automatic mode does not jump between players.
-		// A missing character snapshot means the server clipped its position, not that it left.
+		// Empty nickname keeps automatic mode, preferring the previous target
+		// so the window does not jump between players.
 		TargetClientId = m_WclLastTargetId;
 	}
 
-	// If no cached target is available, find the nearest active player.
-	if(TargetClientId == -1)
+	// If no manual nickname is configured and no cached target is available,
+	// find the nearest active player.
+	if(TargetClientId == -1 && !HasTargetName)
 	{
 		float BestDistance = 1.0e30f;
 		const bool IsFreeView = m_Snap.m_SpecInfo.m_Active && m_Snap.m_SpecInfo.m_SpectatorId == SPEC_FREEVIEW;
@@ -987,7 +1025,6 @@ void CGameClient::RenderWcl()
 			}
 		}
 	}
-
 	if(!in_range(TargetClientId, MAX_CLIENTS - 1))
 		return;
 
