@@ -1115,11 +1115,14 @@ void CGameClient::RenderWcl()
 	// The PiP clip and independent camera keep bars aligned with each character.
 	if(g_Config.m_ClWclShowPlayers && g_Config.m_ClShowFreezeBars)
 	{
+		CScreenRect FreezeBarCullRect = ViewRect;
+		FreezeBarCullRect.Expand(64.0f);
 		for(int ClientId = 0; ClientId < MAX_CLIENTS; ClientId++)
 		{
 			if(m_Snap.m_aCharacters[ClientId].m_Active &&
 				m_Snap.m_apPrevPlayerInfos[ClientId] != nullptr &&
-				m_Snap.m_apPlayerInfos[ClientId] != nullptr)
+				m_Snap.m_apPlayerInfos[ClientId] != nullptr &&
+				FreezeBarCullRect.Inside(m_aClients[ClientId].m_RenderPos))
 			{
 				m_FreezeBars.RenderFreezeBar(ClientId);
 			}
