@@ -915,8 +915,11 @@ void CGameClient::RenderWcl()
 	if(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
 	{
 		m_WclLastTargetId = -1;
+		m_WclSelectedClientId = -1;
+		m_aWclSelectedName[0] = '\0';
 		m_WclLastTargetPos = vec2(0.0f, 0.0f);
 		m_WclHasLastTargetPos = false;
+		g_Config.m_ClWclPlayerId = -1;
 		return;
 	}
 
