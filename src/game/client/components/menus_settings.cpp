@@ -177,7 +177,11 @@ void CMenus::RenderSettingsWcl(CUIRect MainView)
 {
 	CUIRect Slider;
 	Ui()->DoLabel(&MainView, "WCL - Picture in Picture", 20.0f, TEXTALIGN_TL);
-	MainView.HSplitTop(35.0f, nullptr, &MainView);
+	MainView.HSplitTop(5.0f, nullptr, &MainView);
+	CUIRect Hint;
+	MainView.HSplitTop(18.0f, &Hint, &MainView);
+	Ui()->DoLabel(&Hint, Localize("For long-range tracking on public servers, use /pause and zoom out."), 12.0f, TEXTALIGN_TL);
+	MainView.HSplitTop(12.0f, nullptr, &MainView);
 	static int s_WclEnableId, s_WclWorldId, s_WclPlayersId;
 	DoButton_CheckBoxAutoVMarginAndSet(&s_WclEnableId, Localize("Enable teammate window"), &g_Config.m_ClWclEnable, &MainView, 20.0f);
 	DoButton_CheckBoxAutoVMarginAndSet(&s_WclWorldId, Localize("Show map and game world"), &g_Config.m_ClWclShowWorld, &MainView, 20.0f);
