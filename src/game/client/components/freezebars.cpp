@@ -11,7 +11,7 @@ void CFreezeBars::RenderFreezeBar(const int ClientId)
 	// pCharacter contains the predicted character for local players or the last snap for players who are spectated
 	CCharacterCore *pCharacter = &GameClient()->m_aClients[ClientId].m_RegularPredicted; // TClient
 
-	if(pCharacter->m_FreezeEnd <= 0 || pCharacter->m_FreezeStart == 0 || pCharacter->m_FreezeEnd <= pCharacter->m_FreezeStart || !GameClient()->m_Snap.m_aCharacters[ClientId].m_HasExtendedDisplayInfo || (pCharacter->m_IsInFreeze && g_Config.m_ClFreezeBarsAlphaInsideFreeze == 0))
+	if(pCharacter->m_FreezeEnd <= 0 || pCharacter->m_FreezeStart == 0 || pCharacter->m_FreezeEnd <= pCharacter->m_FreezeStart || !GameClient()->m_Snap.m_aCharacters[ClientId].m_HasExtendedDisplayInfo || pCharacter->m_IsInFreeze)
 	{
 		return;
 	}
@@ -27,12 +27,7 @@ void CFreezeBars::RenderFreezeBar(const int ClientId)
 	Position.x -= FreezeBarHalfWidth;
 	Position.y += 32;
 
-	float Alpha = GameClient()->IsOtherTeam(ClientId) ? g_Config.m_ClShowOthersAlpha / 100.0f : 1.0f;
-	if(pCharacter->m_IsInFreeze)
-	{
-		Alpha *= g_Config.m_ClFreezeBarsAlphaInsideFreeze / 100.0f;
-	}
-
+	const float Alpha = GameClient()->IsOtherTeam(ClientId) ? g_Config.m_ClShowOthersAlpha / 100.0f : 1.0f;
 	RenderFreezeBarPos(Position.x, Position.y, FreezeBarWidth, FreezeBarHeight, FreezeProgress, Alpha);
 }
 
