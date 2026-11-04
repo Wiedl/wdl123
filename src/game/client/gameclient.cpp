@@ -1096,7 +1096,7 @@ void CGameClient::RenderWcl()
 		m_Snap.m_aCharacters[TargetClientId].m_Active)
 	{
 		m_NamePlates.RenderNamePlateGame(m_aClients[TargetClientId].m_RenderPos,
-			m_Snap.m_apPlayerInfos[TargetClientId], 1.0f, Center);
+			m_Snap.m_apPlayerInfos[TargetClientId], 1.0f);
 	}
 
 	Graphics()->ClipPop();
