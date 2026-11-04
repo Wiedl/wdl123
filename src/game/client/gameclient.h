@@ -287,6 +287,7 @@ private:
 	char m_aWclSelectedName[MAX_NAME_LENGTH] = "";
 	vec2 m_WclLastTargetPos = vec2(0.0f, 0.0f);
 	bool m_WclHasLastTargetPos = false;
+	IGraphics::CTextureHandle m_WclFrameTexture;
 
 	int m_EditorMovementDelay = 5;
 	void UpdateEditorIngameMoved();

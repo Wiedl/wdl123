@@ -81,7 +81,7 @@ MACRO_CONFIG_INT(ClWclPosY, cl_wcl_pos_y, 5, 0, 100, CFGFLAG_CLIENT | CFGFLAG_SA
 MACRO_CONFIG_INT(ClWclZoom, cl_wcl_zoom, 50, 10, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "WCL camera zoom")
 MACRO_CONFIG_INT(ClWclFrame, cl_wcl_frame, 0, 0, 3, CFGFLAG_CLIENT | CFGFLAG_SAVE, "WCL picture-in-picture frame style")
 MACRO_CONFIG_INT(ClWclFrameEnabled, cl_wcl_frame_enabled, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show the WCL picture-in-picture frame")
-MACRO_CONFIG_INT(ClWclCornerRadius, cl_wcl_corner_radius, 8, 0, 16, CFGFLAG_CLIENT | CFGFLAG_SAVE, "WCL picture-in-picture corner radius")
+MACRO_CONFIG_INT(ClWclCornerRadius, cl_wcl_corner_radius, 8, 0, 16, CFGFLAG_CLIENT | CFGFLAG_SAVE, "WCL picture-in-picture screen corner radius")
 MACRO_CONFIG_INT(ClShowhud, cl_showhud, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show ingame HUD")
 MACRO_CONFIG_INT(ClShowhudHealthAmmo, cl_showhud_healthammo, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show ingame HUD (Health + Ammo)")
 MACRO_CONFIG_INT(ClShowhudScore, cl_showhud_score, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show ingame HUD (Score)")

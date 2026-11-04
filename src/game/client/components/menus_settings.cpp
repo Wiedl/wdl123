@@ -242,7 +242,7 @@ void CMenus::RenderSettingsWcl(CUIRect MainView)
 
 		MainView.HSplitTop(22.0f, &Slider, &MainView);
 		DoSliderWithScaledValue(&g_Config.m_ClWclCornerRadius, &g_Config.m_ClWclCornerRadius,
-			&Slider, Localize("Corner radius"), 0, 16, 4, &CUi::ms_LinearScrollbarScale);
+			&Slider, Localize("Screen corner radius"), 0, 16, 4, &CUi::ms_LinearScrollbarScale);
 	}
 
 	Ui()->DoLabel(&MainView, Localize("Target player"), 14.0f, TEXTALIGN_TL);
