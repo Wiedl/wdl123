@@ -1088,6 +1088,13 @@ void CGameClient::RenderWcl()
 		m_Particles.RenderGroup(CParticles::GROUP_EXPLOSIONS);
 		m_Particles.RenderGroup(CParticles::GROUP_EXTRA);
 		m_Particles.RenderGroup(CParticles::GROUP_GENERAL);
+		// Draw the selected teammate's thaw-time bar in the WCL camera.
+		if(m_Snap.m_aCharacters[TargetClientId].m_Active &&
+			m_Snap.m_apPrevPlayerInfos[TargetClientId] != nullptr &&
+			m_Snap.m_apPlayerInfos[TargetClientId] != nullptr)
+		{
+			m_FreezeBars.RenderFreezeBar(TargetClientId);
+		}
 	}
 
 	if(g_Config.m_ClWclShowWorld)
