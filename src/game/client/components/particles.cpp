@@ -174,23 +174,18 @@ void CParticles::OnInit()
 	Graphics()->QuadContainerUpload(m_ExtraParticleQuadContainerIndex);
 }
 
-bool CParticles::ParticleIsVisibleOnScreen(const vec2 &CurPos, float CurSize) const
-{
-	CScreenRect ScreenRect = Graphics()->GetScreen();
-
-	// for simplicity assume the worst case rotation, that increases the bounding box around the particle by its diagonal
-	const float SqrtOf2 = std::sqrt(2);
-	CurSize = SqrtOf2 * CurSize;
-
-	// always uses the mid of the particle
-	float SizeHalf = CurSize / 2;
-	ScreenRect.Expand(SizeHalf);
-
-	return ScreenRect.Inside(CurPos);
-}
-
 void CParticles::RenderGroup(int Group)
 {
+	// The viewport stays fixed during this group pass. Fetch it once instead
+	// of querying the graphics backend for every particle.
+	const CScreenRect ScreenRect = Graphics()->GetScreen();
+	constexpr float PARTICLE_ROTATED_BOUNDS_SCALE = 0.70710678118f; // sqrt(2) / 2
+	auto IsParticleVisibleOnScreen = [&ScreenRect](const vec2 &CurPos, float CurSize) {
+		CScreenRect ParticleScreenRect = ScreenRect;
+		ParticleScreenRect.Expand(PARTICLE_ROTATED_BOUNDS_SCALE * CurSize);
+		return ParticleScreenRect.Inside(CurPos);
+	};
+
 	IGraphics::CTextureHandle *aParticles = GameClient()->m_ParticlesSkin.m_aSpriteParticles;
 	int FirstParticleOffset = SPRITE_PART_SLICE;
 	int ParticleQuadContainerIndex = m_ParticleQuadContainerIndex;
@@ -249,7 +244,7 @@ void CParticles::RenderGroup(int Group)
 			}
 
 			// the current position, respecting the size, is inside the viewport, render it, else ignore
-			if(ParticleIsVisibleOnScreen(p, Size))
+			if(IsParticleVisibleOnScreen(p, Size))
 			{
 				if((size_t)CurParticleRenderCount == GRAPHICS_MAX_PARTICLES_RENDER_COUNT || LastColor.r != m_aParticles[i].m_Color.r || LastColor.g != m_aParticles[i].m_Color.g || LastColor.b != m_aParticles[i].m_Color.b || LastColor.a != Alpha || LastQuadOffset != QuadOffset)
 				{
@@ -307,7 +302,7 @@ void CParticles::RenderGroup(int Group)
 			}
 
 			// the current position, respecting the size, is inside the viewport, render it, else ignore
-			if(ParticleIsVisibleOnScreen(p, Size))
+			if(IsParticleVisibleOnScreen(p, Size))
 			{
 				Graphics()->TextureSet(aParticles[m_aParticles[i].m_Spr - FirstParticleOffset]);
 				Graphics()->QuadsBegin();
