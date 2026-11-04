@@ -280,6 +280,10 @@ private:
 	void ProcessEvents();
 	void UpdatePositions();
 	void RenderWcl();
+	// Keep the teammate PiP at the last known position when the server network-clips the character.
+	int m_WclLastTargetId = -1;
+	vec2 m_WclLastTargetPos = vec2(0.0f, 0.0f);
+	bool m_WclHasLastTargetPos = false;
 
 	int m_EditorMovementDelay = 5;
 	void UpdateEditorIngameMoved();
