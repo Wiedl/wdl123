@@ -2779,3 +2779,14 @@ Full-map tracking range
 
 Target player
 == Игрок для наблюдения
+Minimal
+== Минималистичная
+
+Neon
+== Неоновая
+
+Terminal
+== Терминал
+
+Tactical
+== Тактическая
