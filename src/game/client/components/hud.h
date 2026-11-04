@@ -3,6 +3,7 @@
 #ifndef GAME_CLIENT_COMPONENTS_HUD_H
 #define GAME_CLIENT_COMPONENTS_HUD_H
 #include <engine/client.h>
+#include <engine/console.h>
 #include <engine/shared/protocol.h>
 #include <engine/textrender.h>
 
@@ -45,6 +46,31 @@ struct SScoreInfo
 class CHud : public CComponent
 {
 	float m_Width, m_Height;
+
+	enum EHudEditorElement
+	{
+		HUD_EDITOR_STATUS,
+		HUD_EDITOR_TIMER,
+		HUD_EDITOR_RIGHT,
+		HUD_EDITOR_SPECTATOR,
+		HUD_EDITOR_NUM_ELEMENTS,
+	};
+
+	bool m_HudEditorActive = false;
+	int m_HudEditorSelected = -1;
+
+	void GetHudEditorBaseRect(int Element, vec2 &Pos, vec2 &Size) const;
+	vec2 GetHudEditorOffset(int Element) const;
+	float GetHudEditorScale(int Element) const;
+	void GetHudEditorRect(int Element, vec2 &Pos, vec2 &Size) const;
+	int GetHudEditorElementAt(vec2 Position) const;
+	void MapScreenWithHudEditorOffset(int Element);
+	void UpdateHudEditorOffset(int Element, float DeltaX, float DeltaY);
+	void ChangeHudEditorScale(int Element, int Delta);
+	void RenderHudEditor();
+
+	static void ConHudEditor(IConsole::IResult *pResult, void *pUserData);
+	static void ConHudEditorReset(IConsole::IResult *pResult, void *pUserData);
 
 	int m_HudQuadContainerIndex;
 	SScoreInfo m_aScoreInfo[2];
@@ -112,6 +138,9 @@ public:
 	int Sizeof() const override { return sizeof(*this); }
 
 	void ResetHudContainers();
+	void OnConsoleInit() override;
+	bool OnCursorMove(float x, float y, IInput::ECursorType CursorType) override;
+	bool OnInput(const IInput::CEvent &Event) override;
 	void OnWindowResize() override;
 	void OnReset() override;
 	void OnRender() override;
