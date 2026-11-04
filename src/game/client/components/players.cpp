@@ -598,7 +598,8 @@ void CPlayers::RenderPlayer(
 	const CTeeRenderInfo *pRenderInfo,
 	int ClientId,
 	float Intra,
-	bool RenderGhost)
+	bool RenderGhost,
+	bool WclRender)
 {
 	CNetObj_Character Prev;
 	CNetObj_Character Player;
@@ -697,19 +698,24 @@ void CPlayers::RenderPlayer(
 		return;
 	}
 
-	GameClient()->m_Flow.Add(Position, Vel * 100.0f, 10.0f);
+	// The WCL pass reuses the flow data produced by the main render pass.
+	if(!WclRender)
+		GameClient()->m_Flow.Add(Position, Vel * 100.0f, 10.0f);
 
 	// TClient
 	if(!RenderGhost && ClientId >= 0 && GameClient()->m_aClients[ClientId].m_IsVolleyBall)
 	{
-		// Update
-		const float Delta = Client()->IntraGameTickSincePrev(g_Config.m_ClDummy);
+		// Update only in the main pass; the WCL pass reuses the current angle.
 		auto &ClientData = GameClient()->m_aClients[ClientId];
-		ClientData.m_VolleyBallAngle += Vel.x * Delta / 64.0f;
-		if(ClientData.m_VolleyBallAngle < 0.0f)
-			ClientData.m_VolleyBallAngle += 2.0f * pi;
-		else if(ClientData.m_VolleyBallAngle > 2.0f * pi)
-			ClientData.m_VolleyBallAngle -= 2.0f * pi;
+		if(!WclRender)
+		{
+			const float Delta = Client()->IntraGameTickSincePrev(g_Config.m_ClDummy);
+			ClientData.m_VolleyBallAngle += Vel.x * Delta / 64.0f;
+			if(ClientData.m_VolleyBallAngle < 0.0f)
+				ClientData.m_VolleyBallAngle += 2.0f * pi;
+			else if(ClientData.m_VolleyBallAngle > 2.0f * pi)
+				ClientData.m_VolleyBallAngle -= 2.0f * pi;
+		}
 		// Render
 		const CSkin *pSkin = GameClient()->m_Skins.Find(g_Config.m_TcVolleyBallBetterBallSkin);
 		if(!pSkin)
@@ -792,7 +798,7 @@ void CPlayers::RenderPlayer(
 		State.Add(&g_pData->m_aAnimations[ANIM_NINJA_SWING], std::clamp(LastAttackTime * 2.0f, 0.0f, 1.0f), 1.0f);
 
 	// do skidding
-	if(!InAir && WantOtherDir && length(Vel * 50) > 500.0f)
+	if(!WclRender && !InAir && WantOtherDir && length(Vel * 50) > 500.0f)
 		GameClient()->m_Effects.SkidTrail(Position, Vel, Player.m_Direction, Alpha, Volume);
 
 	// draw gun
@@ -911,12 +917,14 @@ void CPlayers::RenderPlayer(
 				{
 					Graphics()->QuadsSetRotation(-pi / 2 - State.GetAttach()->m_Angle * pi * 2.0f);
 					WeaponPosition.x -= g_pData->m_Weapons.m_aId[CurrentWeapon].m_Offsetx;
-					GameClient()->m_Effects.PowerupShine(WeaponPosition + vec2(32.0f, 0.0f), vec2(32.0f, 12.0f), Alpha);
+					if(!WclRender)
+						GameClient()->m_Effects.PowerupShine(WeaponPosition + vec2(32.0f, 0.0f), vec2(32.0f, 12.0f), Alpha);
 				}
 				else
 				{
 					Graphics()->QuadsSetRotation(-pi / 2 + State.GetAttach()->m_Angle * pi * 2.0f);
-					GameClient()->m_Effects.PowerupShine(WeaponPosition - vec2(32.0f, 0.0f), vec2(32.0f, 12.0f), Alpha);
+					if(!WclRender)
+						GameClient()->m_Effects.PowerupShine(WeaponPosition - vec2(32.0f, 0.0f), vec2(32.0f, 12.0f), Alpha);
 				}
 				Graphics()->RenderQuadContainerAsSprite(m_WeaponEmoteQuadContainerIndex, QuadOffset, WeaponPosition.x, WeaponPosition.y);
 
@@ -1045,11 +1053,13 @@ void CPlayers::RenderPlayer(
 	vec2 BodyPos = Position + vec2(State.GetBody()->m_X, State.GetBody()->m_Y) * TeeAnimScale;
 	if(RenderInfo.m_TeeRenderFlags & TEE_EFFECT_FROZEN)
 	{
-		GameClient()->m_Effects.FreezingFlakes(BodyPos, vec2(32, 32), Alpha);
+		if(!WclRender)
+				GameClient()->m_Effects.FreezingFlakes(BodyPos, vec2(32, 32), Alpha);
 	}
 	if(RenderInfo.m_TeeRenderFlags & TEE_EFFECT_SPARKLE)
 	{
-		GameClient()->m_Effects.SparkleTrail(BodyPos, Alpha);
+		if(!WclRender)
+				GameClient()->m_Effects.SparkleTrail(BodyPos, Alpha);
 	}
 
 	if(ClientId < 0)
@@ -1124,6 +1134,16 @@ inline bool CPlayers::IsPlayerInfoAvailable(int ClientId) const
 }
 
 void CPlayers::OnRender()
+{
+	OnRenderInternal(false);
+}
+
+void CPlayers::OnRenderWcl()
+{
+	OnRenderInternal(true);
+}
+
+void CPlayers::OnRenderInternal(bool WclRender)
 {
 	if(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
 		return;
@@ -1261,15 +1281,15 @@ void CPlayers::OnRender()
 				       (g_Config.m_TcUnpredOthersInFreeze && Client()->m_IsLocalFrozen);
 		if(g_Config.m_TcShowOthersGhosts && !HideGhost && !GameClient()->m_Snap.m_SpecInfo.m_Active && Client()->State() != IClient::STATE_DEMOPLAYBACK)
 		{
-			RenderPlayer(ScreenRect, &GameClient()->m_aClients[ClientId].m_RenderPrev, &GameClient()->m_aClients[ClientId].m_RenderCur, &aRenderInfo[ClientId], ClientId, 0.0f, true);
+			RenderPlayer(ScreenRect, &GameClient()->m_aClients[ClientId].m_RenderPrev, &GameClient()->m_aClients[ClientId].m_RenderCur, &aRenderInfo[ClientId], ClientId, 0.0f, true, WclRender);
 		}
-		RenderPlayer(ScreenRect, &GameClient()->m_aClients[ClientId].m_RenderPrev, &GameClient()->m_aClients[ClientId].m_RenderCur, &aRenderInfo[ClientId], ClientId);
+		RenderPlayer(ScreenRect, &GameClient()->m_aClients[ClientId].m_RenderPrev, &GameClient()->m_aClients[ClientId].m_RenderCur, &aRenderInfo[ClientId], ClientId, 0.0f, false, WclRender);
 	}
 	if(RenderLastId != -1 && IsPlayerInfoAvailable(RenderLastId))
 	{
 		const CGameClient::CClientData *pClientData = &GameClient()->m_aClients[RenderLastId];
 		RenderHookCollLine(ScreenRect, &pClientData->m_RenderPrev, &pClientData->m_RenderCur, RenderLastId);
-		RenderPlayer(ScreenRect, &pClientData->m_RenderPrev, &pClientData->m_RenderCur, &aRenderInfo[RenderLastId], RenderLastId);
+		RenderPlayer(ScreenRect, &pClientData->m_RenderPrev, &pClientData->m_RenderCur, &aRenderInfo[RenderLastId], RenderLastId, 0.0f, false, WclRender);
 	}
 }
 
