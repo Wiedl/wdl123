@@ -279,6 +279,7 @@ private:
 
 	void ProcessEvents();
 	void UpdatePositions();
+	void RenderWcl();
 
 	int m_EditorMovementDelay = 5;
 	void UpdateEditorIngameMoved();

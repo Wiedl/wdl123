@@ -51,6 +51,11 @@ public:
 	int m_EntityOverlayVal;
 	vec2 m_Center;
 	float m_Zoom;
+	float m_Aspect = 0.0f;
+	int m_ViewportX = 0;
+	int m_ViewportY = 0;
+	int m_ViewportW = 0;
+	int m_ViewportH = 0;
 	bool m_RenderText;
 	bool m_RenderInvalidTiles;
 	bool m_TileAndQuadBuffering;

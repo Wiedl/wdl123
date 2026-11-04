@@ -17,6 +17,36 @@
 #include <array>
 #include <cmath>
 
+namespace
+{
+CScreenRect MapScreenToRenderViewport(IGraphics *pGraphics, const CRenderLayerParams &Params,
+	float CenterX, float CenterY, float ParallaxX, float ParallaxY, float ParallaxZoom,
+	float OffsetX, float OffsetY)
+{
+	const float Aspect = Params.m_Aspect > 0.0f ? Params.m_Aspect : pGraphics->ScreenAspect();
+	const CScreenRect ViewRect = pGraphics->MapScreenToWorld(CenterX, CenterY, ParallaxX, ParallaxY,
+		ParallaxZoom, OffsetX, OffsetY, Aspect, Params.m_Zoom);
+	if(Params.m_ViewportW <= 0 || Params.m_ViewportH <= 0)
+		return ViewRect;
+
+	// MapScreen maps over the complete drawable surface. Expand the world rect
+	// so the clipped physical viewport keeps its intended aspect ratio and scale.
+	const float FullWidth = ViewRect.Width() * pGraphics->ScreenWidth() / Params.m_ViewportW;
+	const float FullHeight = ViewRect.Height() * pGraphics->ScreenHeight() / Params.m_ViewportH;
+	const float ViewCenterX = (ViewRect.m_TopLeft.x + ViewRect.m_BottomRight.x) * 0.5f;
+	const float ViewCenterY = (ViewRect.m_TopLeft.y + ViewRect.m_BottomRight.y) * 0.5f;
+	const float PixelCenterX = (Params.m_ViewportX + Params.m_ViewportW * 0.5f) / pGraphics->ScreenWidth();
+	const float PixelCenterY = (Params.m_ViewportY + Params.m_ViewportH * 0.5f) / pGraphics->ScreenHeight();
+	return CScreenRect(
+		ViewCenterX - FullWidth * PixelCenterX,
+		ViewCenterY - FullHeight * PixelCenterY,
+		FullWidth,
+		FullHeight);
+}
+}
+
+
+
 /************************
  * Render Buffer Helper *
  ************************/
@@ -234,9 +264,9 @@ bool CRenderLayerGroup::DoRender(const CRenderLayerParams &Params)
 		if(m_pGroup->m_Version >= 2 && m_pGroup->m_UseClipping)
 		{
 			// set clipping
-			Graphics()->MapScreenToInterface(Params.m_Center.x, Params.m_Center.y, Params.m_Zoom);
-
-			CScreenRect ScreenRect = Graphics()->GetScreen();
+			CScreenRect ScreenRect = MapScreenToRenderViewport(Graphics(), Params,
+				Params.m_Center.x, Params.m_Center.y, 100.0f, 100.0f, 100.0f, 0.0f, 0.0f);
+			Graphics()->MapScreen(ScreenRect);
 			float ScreenWidth = ScreenRect.Width();
 			float ScreenHeight = ScreenRect.Height();
 			float Left = m_pGroup->m_ClipX - ScreenRect.m_TopLeft.x;
@@ -285,8 +315,9 @@ void CRenderLayerGroup::Init()
 void CRenderLayerGroup::Render(const CRenderLayerParams &Params)
 {
 	int ParallaxZoom = std::clamp(std::max(m_pGroup->m_ParallaxX, m_pGroup->m_ParallaxY), 0, 100);
-	CScreenRect ScreenRect = Graphics()->MapScreenToWorld(Params.m_Center.x, Params.m_Center.y, m_pGroup->m_ParallaxX, m_pGroup->m_ParallaxY, (float)ParallaxZoom,
-		m_pGroup->m_OffsetX, m_pGroup->m_OffsetY, Graphics()->ScreenAspect(), Params.m_Zoom);
+	CScreenRect ScreenRect = MapScreenToRenderViewport(Graphics(), Params,
+		Params.m_Center.x, Params.m_Center.y, m_pGroup->m_ParallaxX, m_pGroup->m_ParallaxY, (float)ParallaxZoom,
+		m_pGroup->m_OffsetX, m_pGroup->m_OffsetY);
 	Graphics()->MapScreen(ScreenRect);
 }
 

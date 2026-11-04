@@ -134,6 +134,21 @@ void CGraphics_Threaded::ClipEnable(int x, int y, int w, int h)
 	if(y < 0)
 		h += y;
 
+	// Intersect layer clips with the current parent clip, which may be the
+	// WCL viewport. Clip state is stored with a bottom-left Y origin.
+	if(m_State.m_ClipEnable)
+	{
+		const int ParentTop = ScreenHeight() - (m_State.m_ClipY + m_State.m_ClipH);
+		const int Left = std::max(x, m_State.m_ClipX);
+		const int Top = std::max(y, ParentTop);
+		const int Right = std::min(x + w, m_State.m_ClipX + m_State.m_ClipW);
+		const int Bottom = std::min(y + h, ParentTop + m_State.m_ClipH);
+		x = Left;
+		y = Top;
+		w = std::max(0, Right - Left);
+		h = std::max(0, Bottom - Top);
+	}
+
 	x = std::clamp(x, 0, ScreenWidth());
 	y = std::clamp(y, 0, ScreenHeight());
 	w = std::clamp(w, 0, ScreenWidth() - x);
@@ -148,7 +163,38 @@ void CGraphics_Threaded::ClipEnable(int x, int y, int w, int h)
 
 void CGraphics_Threaded::ClipDisable()
 {
-	m_State.m_ClipEnable = false;
+	if(m_vClipStack.empty())
+	{
+		m_State.m_ClipEnable = false;
+		return;
+	}
+
+	const SClipState &Parent = m_vClipStack.back();
+	m_State.m_ClipEnable = Parent.m_Enabled;
+	m_State.m_ClipX = Parent.m_X;
+	m_State.m_ClipY = Parent.m_Y;
+	m_State.m_ClipW = Parent.m_W;
+	m_State.m_ClipH = Parent.m_H;
+}
+
+void CGraphics_Threaded::ClipPush()
+{
+	m_vClipStack.push_back({m_State.m_ClipEnable, m_State.m_ClipX, m_State.m_ClipY, m_State.m_ClipW, m_State.m_ClipH});
+}
+
+void CGraphics_Threaded::ClipPop()
+{
+	dbg_assert(!m_vClipStack.empty(), "graphics: ClipPop without ClipPush");
+	if(m_vClipStack.empty())
+		return;
+
+	const SClipState Parent = m_vClipStack.back();
+	m_vClipStack.pop_back();
+	m_State.m_ClipEnable = Parent.m_Enabled;
+	m_State.m_ClipX = Parent.m_X;
+	m_State.m_ClipY = Parent.m_Y;
+	m_State.m_ClipW = Parent.m_W;
+	m_State.m_ClipH = Parent.m_H;
 }
 
 void CGraphics_Threaded::BlendNone()

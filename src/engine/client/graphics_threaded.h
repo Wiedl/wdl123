@@ -757,6 +757,15 @@ class CGraphics_Threaded : public IEngineGraphics
 	};
 
 	CCommandBuffer::SState m_State;
+	struct SClipState
+	{
+		bool m_Enabled;
+		int m_X;
+		int m_Y;
+		int m_W;
+		int m_H;
+	};
+	std::vector<SClipState> m_vClipStack;
 	IGraphicsBackend *m_pBackend;
 	bool m_GLTileBufferingEnabled;
 	bool m_GLQuadBufferingEnabled;
@@ -908,6 +917,8 @@ public:
 
 	void ClipEnable(int x, int y, int w, int h) override;
 	void ClipDisable() override;
+	void ClipPush() override;
+	void ClipPop() override;
 
 	void BlendNone() override;
 	void BlendNormal() override;

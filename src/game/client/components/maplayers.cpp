@@ -54,7 +54,8 @@ void CMapLayers::OnRender()
 	RenderWithCamera(pCamera->m_Center, pCamera->m_Zoom);
 }
 
-void CMapLayers::RenderWithCamera(const vec2 &Center, float Zoom)
+void CMapLayers::RenderWithCamera(const vec2 &Center, float Zoom, float Aspect,
+	int ViewportX, int ViewportY, int ViewportW, int ViewportH)
 {
 	if(m_OnlineOnly && Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
 		return;
@@ -63,6 +64,11 @@ void CMapLayers::RenderWithCamera(const vec2 &Center, float Zoom)
 	m_Params.m_EntityOverlayVal = m_Type == RENDERTYPE_FULL_DESIGN ? 0 : g_Config.m_ClOverlayEntities;
 	m_Params.m_Center = Center;
 	m_Params.m_Zoom = Zoom;
+	m_Params.m_Aspect = Aspect;
+	m_Params.m_ViewportX = ViewportX;
+	m_Params.m_ViewportY = ViewportY;
+	m_Params.m_ViewportW = ViewportW;
+	m_Params.m_ViewportH = ViewportH;
 	m_Params.m_RenderText = g_Config.m_ClTextEntities;
 	m_Params.m_DebugRenderGroupClips = g_Config.m_DbgRenderGroupClips;
 	m_Params.m_DebugRenderQuadClips = g_Config.m_DbgRenderQuadClips;

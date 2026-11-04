@@ -172,9 +172,9 @@ void CMapRenderer::Render(const CRenderLayerParams &Params)
 	Graphics()->ClipDisable();
 
 	// don't reset screen on background
-	if(Params.m_RenderType != ERenderType::RENDERTYPE_BACKGROUND && Params.m_RenderType != ERenderType::RENDERTYPE_BACKGROUND_FORCE)
+	if(Params.m_Aspect > 0.0f || (Params.m_RenderType != ERenderType::RENDERTYPE_BACKGROUND && Params.m_RenderType != ERenderType::RENDERTYPE_BACKGROUND_FORCE))
 	{
-		// reset the screen like it was before
+		// Restore the caller's mapping, including embedded viewports.
 		Graphics()->MapScreen(ScreenRect);
 	}
 	else

@@ -822,6 +822,8 @@ void CGameClient::OnRender()
 	for(auto &pComponent : m_vpAll)
 		pComponent->OnRender();
 
+	RenderWcl();
+
 	// clear all events/input for this frame
 	Input()->Clear();
 
@@ -904,6 +906,119 @@ void CGameClient::OnRender()
 	}
 
 	UpdateManagedTeeRenderInfos();
+}
+
+void CGameClient::RenderWcl()
+{
+	if(!g_Config.m_ClWclEnable || (Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK))
+		return;
+
+	const int ScreenWidth = Graphics()->ScreenWidth();
+	const int ScreenHeight = Graphics()->ScreenHeight();
+	const int Margin = 8;
+	if(ScreenWidth <= Margin * 2 || ScreenHeight <= Margin * 2)
+		return;
+
+	int LocalClientId = m_Snap.m_LocalClientId;
+	if(!in_range(LocalClientId, MAX_CLIENTS - 1))
+		LocalClientId = m_aLocalIds[0];
+
+	auto IsValidTarget = [&](int ClientId) {
+		return in_range(ClientId, MAX_CLIENTS - 1) &&
+		       ClientId != LocalClientId &&
+		       m_aClients[ClientId].m_Active &&
+		       m_Snap.m_aCharacters[ClientId].m_Active &&
+		       m_Snap.m_apPrevPlayerInfos[ClientId] != nullptr &&
+		       m_Snap.m_apPlayerInfos[ClientId] != nullptr;
+	};
+
+	int TargetClientId = -1;
+	if(g_Config.m_ClWclPlayerId >= 0 && IsValidTarget(g_Config.m_ClWclPlayerId))
+	{
+		TargetClientId = g_Config.m_ClWclPlayerId;
+	}
+	else
+	{
+		float BestDistance = 1.0e30f;
+		const bool HasLocalPosition = in_range(LocalClientId, MAX_CLIENTS - 1) &&
+					      m_Snap.m_aCharacters[LocalClientId].m_Active;
+		const vec2 LocalPosition = HasLocalPosition ? m_aClients[LocalClientId].m_RenderPos : vec2(0.0f, 0.0f);
+		for(int ClientId = 0; ClientId < MAX_CLIENTS; ++ClientId)
+		{
+			if(!IsValidTarget(ClientId))
+				continue;
+			if(IsTeamPlay() && IsOtherTeam(ClientId))
+				continue;
+
+			float Distance = (float)ClientId;
+			if(HasLocalPosition)
+			{
+				const vec2 Delta = m_aClients[ClientId].m_RenderPos - LocalPosition;
+				Distance = Delta.x * Delta.x + Delta.y * Delta.y;
+			}
+			if(Distance < BestDistance)
+			{
+				BestDistance = Distance;
+				TargetClientId = ClientId;
+			}
+		}
+	}
+
+	if(!in_range(TargetClientId, MAX_CLIENTS - 1))
+		return;
+
+	const int Width = std::clamp(g_Config.m_ClWclWidth, 1, ScreenWidth - Margin * 2);
+	const int Height = std::clamp(g_Config.m_ClWclHeight, 1, ScreenHeight - Margin * 2);
+	const int X = Margin + (ScreenWidth - Margin * 2 - Width) * std::clamp(g_Config.m_ClWclPosX, 0, 100) / 100;
+	const int Y = Margin + (ScreenHeight - Margin * 2 - Height) * std::clamp(g_Config.m_ClWclPosY, 0, 100) / 100;
+	const float Aspect = (float)Width / (float)Height;
+	const float Zoom = std::clamp(g_Config.m_ClWclZoom / 50.0f, 0.2f, 2.0f);
+	const vec2 Center = m_aClients[TargetClientId].m_RenderPos;
+
+	const CScreenRect ViewRect = Graphics()->MapScreenToWorld(Center.x, Center.y, 100.0f, 100.0f, 100.0f,
+		0.0f, 0.0f, Aspect, Zoom);
+	const float FullWorldWidth = ViewRect.Width() * ScreenWidth / Width;
+	const float FullWorldHeight = ViewRect.Height() * ScreenHeight / Height;
+	const float PixelCenterX = (X + Width * 0.5f) / ScreenWidth;
+	const float PixelCenterY = (Y + Height * 0.5f) / ScreenHeight;
+	const CScreenRect WclScreenRect(
+		Center.x - FullWorldWidth * PixelCenterX,
+		Center.y - FullWorldHeight * PixelCenterY,
+		FullWorldWidth,
+		FullWorldHeight);
+
+	const CScreenRect OriginalScreen = Graphics()->GetScreen();
+	Graphics()->MapScreenToSize((float)ScreenWidth, (float)ScreenHeight);
+	Graphics()->TextureClear();
+	Graphics()->DrawRect(X - 3.0f, Y - 3.0f, Width + 6.0f, Height + 6.0f,
+		ColorRGBA(0.02f, 0.025f, 0.035f, 0.96f), IGraphics::CORNER_ALL, 4.0f);
+	Graphics()->DrawRect(X, Y, Width, Height, ColorRGBA(0.0f, 0.0f, 0.0f, 1.0f), 0, 0.0f);
+
+	Graphics()->ClipPush();
+	Graphics()->ClipEnable(X, Y, Width, Height);
+	Graphics()->MapScreen(WclScreenRect);
+
+	if(g_Config.m_ClWclShowWorld)
+	{
+		m_MapLayersBackground.RenderWithCamera(Center, Zoom, Aspect, X, Y, Width, Height);
+		m_Items.OnRender();
+	}
+
+	if(g_Config.m_ClWclShowPlayers)
+		m_Players.OnRender();
+
+	if(g_Config.m_ClWclShowWorld)
+		m_MapLayersForeground.RenderWithCamera(Center, Zoom, Aspect, X, Y, Width, Height);
+
+	Graphics()->ClipPop();
+
+	Graphics()->MapScreenToSize((float)ScreenWidth, (float)ScreenHeight);
+	const ColorRGBA FrameColor(0.38f, 0.46f, 0.52f, 0.95f);
+	Graphics()->DrawRect(X - 2.0f, Y - 2.0f, Width + 4.0f, 1.0f, FrameColor, 0, 0.0f);
+	Graphics()->DrawRect(X - 2.0f, Y + Height + 1.0f, Width + 4.0f, 1.0f, FrameColor, 0, 0.0f);
+	Graphics()->DrawRect(X - 2.0f, Y, 1.0f, Height, FrameColor, 0, 0.0f);
+	Graphics()->DrawRect(X + Width + 1.0f, Y, 1.0f, Height, FrameColor, 0, 0.0f);
+	Graphics()->MapScreen(OriginalScreen);
 }
 
 void CGameClient::OnDummyDisconnect()

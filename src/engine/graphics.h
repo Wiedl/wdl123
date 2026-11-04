@@ -324,6 +324,8 @@ public:
 
 	virtual void ClipEnable(int x, int y, int w, int h) = 0;
 	virtual void ClipDisable() = 0;
+	virtual void ClipPush() = 0;
+	virtual void ClipPop() = 0;
 
 	virtual void MapScreen(const CScreenRect &ScreenRect) = 0;
 
