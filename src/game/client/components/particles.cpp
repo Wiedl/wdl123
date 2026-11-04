@@ -176,9 +176,13 @@ void CParticles::OnInit()
 
 void CParticles::RenderGroup(int Group)
 {
-	// The viewport stays fixed during this group pass. Fetch it once instead
-	// of querying the graphics backend for every particle.
-	const CScreenRect ScreenRect = Graphics()->GetScreen();
+	RenderGroup(Group, Graphics()->GetScreen());
+}
+
+void CParticles::RenderGroup(int Group, const CScreenRect &ScreenRect)
+{
+	// The viewport stays fixed during this group pass. Reuse the bounds passed
+	// by WCL so particles outside the small camera viewport are skipped early.
 	constexpr float PARTICLE_ROTATED_BOUNDS_SCALE = 0.70710678118f; // sqrt(2) / 2
 	auto IsParticleVisibleOnScreen = [&ScreenRect](const vec2 &CurPos, float CurSize) {
 		CScreenRect ParticleScreenRect = ScreenRect;
