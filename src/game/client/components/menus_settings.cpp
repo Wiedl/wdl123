@@ -180,7 +180,7 @@ void CMenus::RenderSettingsWcl(CUIRect MainView)
 	MainView.HSplitTop(5.0f, nullptr, &MainView);
 	CUIRect Hint;
 	MainView.HSplitTop(18.0f, &Hint, &MainView);
-	Ui()->DoLabel(&Hint, Localize("For long-range tracking on public servers, use /pause and zoom out."), 12.0f, TEXTALIGN_TL);
+	Ui()->DoLabel(&Hint, Localize("Extended range can increase network traffic."), 12.0f, TEXTALIGN_TL);
 	MainView.HSplitTop(12.0f, nullptr, &MainView);
 	static int s_WclEnableId, s_WclWorldId, s_WclPlayersId;
 	DoButton_CheckBoxAutoVMarginAndSet(&s_WclEnableId, Localize("Enable teammate window"), &g_Config.m_ClWclEnable, &MainView, 20.0f);
