@@ -15,17 +15,20 @@ class CScreenRect;
 
 class CItems : public CComponent
 {
-	void RenderProjectile(const CProjectileData *pCurrent, int ItemId, const CScreenRect &ScreenRect);
-	void RenderPickup(const CNetObj_Pickup *pPrev, const CNetObj_Pickup *pCurrent, bool IsPredicted, int Flags);
+	void RenderProjectile(const CProjectileData *pCurrent, int ItemId, const CScreenRect &ScreenRect, bool CreateEffects);
+	void RenderPickup(const CNetObj_Pickup *pPrev, const CNetObj_Pickup *pCurrent, bool IsPredicted, int Flags, const CScreenRect &ScreenRect, bool CreateEffects);
 	void RenderFlags();
 	void RenderFlag(const CNetObj_Flag *pPrev, const CNetObj_Flag *pCurrent, const CNetObj_GameData *pPrevGameData, const CNetObj_GameData *pCurGameData);
 	void RenderLaser(const CLaserData *pCurrent, bool IsPredicted = false);
+
+	void OnRenderInternal(bool WclRender);
 
 	int m_ItemsQuadContainerIndex;
 
 public:
 	int Sizeof() const override { return sizeof(*this); }
 	void OnRender() override;
+	void OnRenderWcl();
 	void OnInit() override;
 
 	void ReconstructSmokeTrail(const CProjectileData *pCurrent, int DestroyTick);
