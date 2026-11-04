@@ -70,7 +70,7 @@ MACRO_CONFIG_INT(ClAutoswitchWeapons, cl_autoswitch_weapons, 1, 0, 1, CFGFLAG_CL
 MACRO_CONFIG_INT(ClAutoswitchWeaponsOutOfAmmo, cl_autoswitch_weapons_out_of_ammo, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Auto switch weapon when out of ammo")
 
 MACRO_CONFIG_INT(ClWclEnable, cl_wcl_enable, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable WCL teammate picture-in-picture window")
-MACRO_CONFIG_INT(ClWclProfile, cl_wcl_profile, 0, 0, 1, CFGFLAG_CLIENT, "Profile CPU time spent rendering WCL (logs every 120 frames)")
+MACRO_CONFIG_INT(ClWclProfile, cl_wcl_profile, 0, 0, 1, CFGFLAG_CLIENT, "Profile CPU time spent rendering WCL (logs every 600 frames)")
 MACRO_CONFIG_INT(ClWclExtendedRange, cl_wcl_extended_range, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Extend server network view to the map bounds for WCL (increases snapshot size and CPU usage)")
 MACRO_CONFIG_INT(ClWclShowWorld, cl_wcl_show_world, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Render the map and game world in the WCL window")
 MACRO_CONFIG_INT(ClWclShowPlayers, cl_wcl_show_players, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Render players in the WCL window")
