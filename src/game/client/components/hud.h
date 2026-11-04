@@ -139,6 +139,8 @@ public:
 
 	void ResetHudContainers();
 	void OnConsoleInit() override;
+	void SetHudEditorActive(bool Active);
+	void ResetHudEditorLayout();
 	bool OnCursorMove(float x, float y, IInput::ECursorType CursorType) override;
 	bool OnInput(const IInput::CEvent &Event) override;
 	void OnWindowResize() override;
