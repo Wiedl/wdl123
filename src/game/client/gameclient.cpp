@@ -452,8 +452,6 @@ void CGameClient::OnInit()
 		m_Menus.RenderLoading(pLoadingDDNetCaption, pLoadingMessageAssets, 1);
 	}
 
-	// Load the WCL frame atlas once; the selected design is reused every frame.
-	m_WclFrameTexture = Graphics()->LoadTexture("wcl_frames/wcl_frames.png", IStorage::TYPE_ALL);
 
 	m_GameWorld.Init(Collision(), m_aTuningList, &m_MapBugs);
 	OnReset();
@@ -1062,10 +1060,19 @@ void CGameClient::RenderWcl()
 	Graphics()->MapScreenToSize((float)ScreenWidth, (float)ScreenHeight);
 	Graphics()->TextureClear();
 	const int CornerRadius = std::clamp(g_Config.m_ClWclCornerRadius, 0, 16);
+	const int FrameStyle = std::clamp(g_Config.m_ClWclFrame, 0, 3);
+	const ColorRGBA FrameColor = FrameStyle == 0 ? ColorRGBA(0.72f, 0.76f, 0.82f, 0.96f) :
+		FrameStyle == 1 ? ColorRGBA(0.08f, 0.78f, 1.0f, 0.98f) :
+		FrameStyle == 2 ? ColorRGBA(0.22f, 0.88f, 0.35f, 0.98f) :
+			ColorRGBA(1.0f, 0.68f, 0.12f, 0.98f);
+	constexpr float FrameThickness = 4.0f;
 	if(g_Config.m_ClWclFrameEnabled)
 	{
-		Graphics()->DrawRect(X - 3.0f, Y - 3.0f, Width + 6.0f, Height + 6.0f,
-			ColorRGBA(0.02f, 0.025f, 0.035f, 0.96f), IGraphics::CORNER_ALL, CornerRadius);
+		// Draw only a narrow rounded border outside the PiP viewport. The viewport
+		// itself stays transparent to the frame color and is rendered normally.
+		Graphics()->DrawRect(X - FrameThickness, Y - FrameThickness,
+			Width + FrameThickness * 2.0f, Height + FrameThickness * 2.0f,
+			FrameColor, IGraphics::CORNER_ALL, CornerRadius);
 	}
 	Graphics()->DrawRect(X, Y, Width, Height, ColorRGBA(0.0f, 0.0f, 0.0f, 1.0f), 0, 0.0f);
 
@@ -1146,39 +1153,6 @@ void CGameClient::RenderWcl()
 	Graphics()->ClipPop();
 
 	Graphics()->MapScreenToSize((float)ScreenWidth, (float)ScreenHeight);
-	if(g_Config.m_ClWclFrameEnabled && m_WclFrameTexture.IsValid())
-	{
-		// Atlas: four frame styles horizontally and five adjustable corner radii vertically.
-		constexpr float AtlasWidth = 1300.0f;
-		constexpr float AtlasHeight = 989.0f;
-		constexpr float CellWidth = 320.0f;
-		constexpr float CellHeight = 193.0f;
-		constexpr float Gutter = 4.0f;
-		const int FrameStyle = std::clamp(g_Config.m_ClWclFrame, 0, 3);
-		const int RadiusRow = CornerRadius / 4;
-		const float CellX = Gutter + FrameStyle * (CellWidth + Gutter);
-		const float CellY = Gutter + RadiusRow * (CellHeight + Gutter);
-		const float U0 = (CellX + 1.0f) / AtlasWidth;
-		const float V0 = (CellY + 1.0f) / AtlasHeight;
-		const float U1 = (CellX + CellWidth - 1.0f) / AtlasWidth;
-		const float V1 = (CellY + CellHeight - 1.0f) / AtlasHeight;
-
-		Graphics()->TextureSet(m_WclFrameTexture);
-		Graphics()->SetColor(ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f));
-		Graphics()->QuadsBegin();
-		Graphics()->QuadsSetSubset(U0, V0, U1, V1);
-		IGraphics::CQuadItem FrameQuad(X - 4.0f, Y - 4.0f, Width + 8.0f, Height + 8.0f);
-		Graphics()->QuadsDrawTL(&FrameQuad, 1);
-		Graphics()->QuadsEnd();
-		Graphics()->TextureClear();
-	}
-	else if(g_Config.m_ClWclFrameEnabled)
-	{
-		// Fallback if the PNG atlas could not be loaded.
-		const ColorRGBA FrameColor(0.38f, 0.46f, 0.52f, 0.95f);
-		Graphics()->DrawRect(X - 2.0f, Y - 2.0f, Width + 4.0f, Height + 4.0f,
-			FrameColor, IGraphics::CORNER_ALL, CornerRadius);
-	}
 	Graphics()->MapScreen(OriginalScreen);
 }
 
@@ -1576,9 +1550,6 @@ void CGameClient::OnShutdown()
 {
 	for(auto &pComponent : m_vpAll)
 		pComponent->OnShutdown();
-
-	if(m_WclFrameTexture.IsValid())
-		Graphics()->UnloadTexture(&m_WclFrameTexture);
 
 	m_LocalServer.KillServer();
 }
