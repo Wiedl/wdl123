@@ -26,6 +26,31 @@ inline static void RotatePoint(const vec2 &Center, vec2 &Point, float Rotation)
 	Point.y = RelativePos.x * std::sin(Rotation) + RelativePos.y * std::cos(Rotation) + Center.y;
 }
 
+namespace
+{
+CScreenRect MapMovingTilesScreenToViewport(IGraphics *pGraphics, const vec2 &Center, float Zoom, float Aspect,
+	int ViewportX, int ViewportY, int ViewportW, int ViewportH,
+	float ParallaxX, float ParallaxY, float ParallaxZoom, float OffsetX, float OffsetY)
+{
+	const CScreenRect ViewRect = pGraphics->MapScreenToWorld(Center.x, Center.y, ParallaxX, ParallaxY,
+		ParallaxZoom, OffsetX, OffsetY, Aspect > 0.0f ? Aspect : pGraphics->ScreenAspect(), Zoom);
+	if(ViewportW <= 0 || ViewportH <= 0)
+		return ViewRect;
+
+	const float FullWidth = ViewRect.Width() * pGraphics->ScreenWidth() / ViewportW;
+	const float FullHeight = ViewRect.Height() * pGraphics->ScreenHeight() / ViewportH;
+	const float ViewCenterX = (ViewRect.m_TopLeft.x + ViewRect.m_BottomRight.x) * 0.5f;
+	const float ViewCenterY = (ViewRect.m_TopLeft.y + ViewRect.m_BottomRight.y) * 0.5f;
+	const float PixelCenterX = (ViewportX + ViewportW * 0.5f) / pGraphics->ScreenWidth();
+	const float PixelCenterY = (ViewportY + ViewportH * 0.5f) / pGraphics->ScreenHeight();
+	return CScreenRect(
+		ViewCenterX - FullWidth * PixelCenterX,
+		ViewCenterY - FullHeight * PixelCenterY,
+		FullWidth,
+		FullHeight);
+}
+}
+
 inline static bool QuadName(const int *pInts, size_t NumInts, char *pStr, size_t StrSize)
 {
 	dbg_assert(NumInts > 0, "QuadName: NumInts invalid");
@@ -127,15 +152,18 @@ void CMovingTiles::OnMapLoad()
 
 void CMovingTiles::OnRender()
 {
+	RenderWithCamera(GameClient()->m_Camera.m_Center, GameClient()->m_Camera.m_Zoom);
+}
+
+void CMovingTiles::RenderWithCamera(const vec2 &Center, float Zoom, float Aspect,
+	int ViewportX, int ViewportY, int ViewportW, int ViewportH)
+{
 	if(g_Config.m_ClOverlayEntities != 100)
 		return;
 	if(!g_Config.m_TcMovingTilesEntities)
 		return;
 	if(m_vQuads.empty())
 		return;
-
-	const vec2 Center = GameClient()->m_Camera.m_Center;
-	const float Zoom = GameClient()->m_Camera.m_Zoom;
 
 	auto ApplyGroupState = [&](const CMapItemGroup *pGroup) -> bool {
 		Graphics()->ClipDisable();
@@ -145,9 +173,10 @@ void CMovingTiles::OnRender()
 
 		if(!g_Config.m_GfxNoclip && pGroup->m_Version >= 2 && pGroup->m_UseClipping)
 		{
-			Graphics()->MapScreenToInterface(Center.x, Center.y, Zoom);
-
-			CScreenRect ScreenRect = Graphics()->GetScreen();
+			CScreenRect ScreenRect = MapMovingTilesScreenToViewport(Graphics(), Center, Zoom, Aspect,
+				ViewportX, ViewportY, ViewportW, ViewportH,
+				100.0f, 100.0f, 100.0f, 0.0f, 0.0f);
+			Graphics()->MapScreen(ScreenRect);
 			float ScreenWidth = ScreenRect.Width();
 			float ScreenHeight = ScreenRect.Height();
 			float Left = pGroup->m_ClipX - ScreenRect.m_TopLeft.x;
@@ -169,11 +198,10 @@ void CMovingTiles::OnRender()
 		}
 
 		int ParallaxZoom = std::clamp(std::max(pGroup->m_ParallaxX, pGroup->m_ParallaxY), 0, 100);
-		CScreenRect ScreenRect = Graphics()->MapScreenToWorld(
-			Center.x, Center.y,
+		CScreenRect ScreenRect = MapMovingTilesScreenToViewport(Graphics(), Center, Zoom, Aspect,
+			ViewportX, ViewportY, ViewportW, ViewportH,
 			pGroup->m_ParallaxX, pGroup->m_ParallaxY, (float)ParallaxZoom,
-			pGroup->m_OffsetX, pGroup->m_OffsetY,
-			Graphics()->ScreenAspect(), Zoom);
+			pGroup->m_OffsetX, pGroup->m_OffsetY);
 		Graphics()->MapScreen(ScreenRect);
 
 		return true;

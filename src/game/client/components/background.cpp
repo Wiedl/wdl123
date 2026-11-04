@@ -104,3 +104,12 @@ void CBackground::OnRender()
 
 	CMapLayers::OnRender();
 }
+
+void CBackground::RenderWithCamera(const vec2 &Center, float Zoom, float Aspect,
+	int ViewportX, int ViewportY, int ViewportW, int ViewportH)
+{
+	if(!m_Loaded || g_Config.m_ClOverlayEntities != 100)
+		return;
+
+	CMapLayers::RenderWithCamera(Center, Zoom, Aspect, ViewportX, ViewportY, ViewportW, ViewportH);
+}

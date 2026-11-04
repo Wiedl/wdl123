@@ -1003,7 +1003,16 @@ void CGameClient::RenderWcl()
 
 	if(g_Config.m_ClWclShowWorld)
 	{
-		m_MapLayersBackground.RenderWithCamera(Center, Zoom, Aspect, X, Y, Width, Height);
+		if(g_Config.m_ClOverlayEntities == 100)
+		{
+			m_Background.RenderWithCamera(Center, Zoom, Aspect, X, Y, Width, Height);
+			m_MovingTilesBackground.RenderWithCamera(Center, Zoom, Aspect, X, Y, Width, Height);
+			Graphics()->MapScreen(WclScreenRect);
+		}
+		else
+		{
+			m_MapLayersBackground.RenderWithCamera(Center, Zoom, Aspect, X, Y, Width, Height);
+		}
 		m_Items.OnRender();
 	}
 
@@ -1011,7 +1020,14 @@ void CGameClient::RenderWcl()
 		m_Players.OnRender();
 
 	if(g_Config.m_ClWclShowWorld)
+	{
 		m_MapLayersForeground.RenderWithCamera(Center, Zoom, Aspect, X, Y, Width, Height);
+		if(g_Config.m_ClOverlayEntities == 100)
+		{
+			m_MovingTilesForeground.RenderWithCamera(Center, Zoom, Aspect, X, Y, Width, Height);
+			Graphics()->MapScreen(WclScreenRect);
+		}
+	}
 
 	Graphics()->ClipPop();
 	Graphics()->ClipPop();
