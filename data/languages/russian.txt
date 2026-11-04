@@ -2796,3 +2796,6 @@ Show frame
 
 Corner radius
 == Радиус скругления
+
+Screen corner radius
+== Скругление углов экранчика

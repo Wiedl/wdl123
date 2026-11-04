@@ -240,10 +240,13 @@ void CMenus::RenderSettingsWcl(CUIRect MainView)
 		if(NewFrameStyle >= 0 && NewFrameStyle < 4)
 			g_Config.m_ClWclFrame = NewFrameStyle;
 
-		MainView.HSplitTop(22.0f, &Slider, &MainView);
-		DoSliderWithScaledValue(&g_Config.m_ClWclCornerRadius, &g_Config.m_ClWclCornerRadius,
-			&Slider, Localize("Screen corner radius"), 0, 16, 4, &CUi::ms_LinearScrollbarScale);
 	}
+
+	// Screen rounding is independent of the decorative frame toggle.
+	MainView.HSplitTop(22.0f, nullptr, &MainView);
+	MainView.HSplitTop(22.0f, &Slider, &MainView);
+	DoSliderWithScaledValue(&g_Config.m_ClWclCornerRadius, &g_Config.m_ClWclCornerRadius,
+		&Slider, Localize("Screen corner radius"), 0, 16, 4, &CUi::ms_LinearScrollbarScale);
 
 	Ui()->DoLabel(&MainView, Localize("Target player"), 14.0f, TEXTALIGN_TL);
 	MainView.HSplitTop(22.0f, nullptr, &MainView);

@@ -1062,11 +1062,11 @@ void CGameClient::RenderWcl()
 	const CScreenRect OriginalScreen = Graphics()->GetScreen();
 	Graphics()->MapScreenToSize((float)ScreenWidth, (float)ScreenHeight);
 	Graphics()->TextureClear();
+	Graphics()->BlendNormal();
 	const int CornerRadius = std::clamp(g_Config.m_ClWclCornerRadius, 0, 16);
-	// This rounded backing belongs to the PiP screen, not to the decorative frame.
-	Graphics()->DrawRect(X, Y, Width, Height, ColorRGBA(0.0f, 0.0f, 0.0f, 1.0f),
-		IGraphics::CORNER_ALL, CornerRadius);
-
+	// Draw a square backing first. Rounded screen corners are masked after the PiP scene,
+	// so the setting works even when the decorative PNG frame is disabled.
+	Graphics()->DrawRect(X, Y, Width, Height, ColorRGBA(0.0f, 0.0f, 0.0f, 1.0f), 0, 0.0f);
 	Graphics()->ClipPush();
 	Graphics()->ClipEnable(X, Y, Width, Height);
 	// Keep the PiP clip as the parent while map groups temporarily disable
@@ -1144,30 +1144,88 @@ void CGameClient::RenderWcl()
 	Graphics()->ClipPop();
 
 	Graphics()->MapScreenToSize((float)ScreenWidth, (float)ScreenHeight);
+	Graphics()->TextureClear();
+	Graphics()->BlendNormal();
+
+	// Cover only the parts outside the rounded PiP screen shape. These masks are
+	// drawn after the world, independently of whether the PNG frame is enabled.
+	if(CornerRadius > 0)
+	{
+		const float Radius = std::min((float)CornerRadius, std::min(Width, Height) * 0.5f);
+		constexpr int CornerMaskSteps = 64;
+		const float Step = Radius / CornerMaskSteps;
+		const ColorRGBA MaskColor(0.0f, 0.0f, 0.0f, 1.0f);
+		Graphics()->QuadsBegin();
+		for(int i = 0; i < CornerMaskSteps; ++i)
+		{
+			const float Offset = (i + 0.5f) * Step;
+			const float TopDistance = Radius - Offset;
+			const float TopMaskWidth = Radius - std::sqrt(std::max(0.0f, Radius * Radius - TopDistance * TopDistance));
+			const float BottomMaskWidth = Radius - std::sqrt(std::max(0.0f, Radius * Radius - Offset * Offset));
+			const float TopY = Y + i * Step;
+			const float BottomY = Y + Height - Radius + i * Step;
+
+			auto DrawMask = [&](float MaskX, float MaskY, float MaskWidth) {
+				if(MaskWidth <= 0.0f)
+					return;
+				Graphics()->SetColor(MaskColor);
+				IGraphics::CQuadItem MaskQuad(MaskX, MaskY, MaskWidth, Step);
+				Graphics()->QuadsDrawTL(&MaskQuad, 1);
+			};
+			DrawMask(X, TopY, TopMaskWidth);
+			DrawMask(X + Width - TopMaskWidth, TopY, TopMaskWidth);
+			DrawMask(X, BottomY, BottomMaskWidth);
+			DrawMask(X + Width - BottomMaskWidth, BottomY, BottomMaskWidth);
+		}
+		Graphics()->QuadsEnd();
+	}
+
+	// Draw the PNG frame as a 9-slice. Fixed-size corners stay intact while
+	// horizontal and vertical edges stretch independently for portrait/landscape PiP.
 	if(g_Config.m_ClWclFrameEnabled && m_WclFrameTexture.IsValid())
 	{
-		// The PNG atlas contains four frame designs in four columns and
-		// square/rounded PiP screen openings in two rows.
-		constexpr float AtlasWidth = 1300.0f;
-		constexpr float AtlasHeight = 398.0f;
-		constexpr float CellWidth = 320.0f;
-		constexpr float CellHeight = 193.0f;
-		constexpr float Gutter = 4.0f;
+		constexpr float AtlasWidth = 256.0f;
+		constexpr float AtlasHeight = 64.0f;
+		constexpr float CellWidth = 64.0f;
+		constexpr float Slice = 16.0f;
+		constexpr float Edge = CellWidth - Slice * 2.0f;
 		const int FrameStyle = std::clamp(g_Config.m_ClWclFrame, 0, 3);
-		const int RadiusRow = CornerRadius >= 8 ? 1 : 0;
-		const float CellX = Gutter + FrameStyle * (CellWidth + Gutter);
-		const float CellY = Gutter + RadiusRow * (CellHeight + Gutter);
-		const float U0 = (CellX + 1.0f) / AtlasWidth;
-		const float V0 = (CellY + 1.0f) / AtlasHeight;
-		const float U1 = (CellX + CellWidth - 1.0f) / AtlasWidth;
-		const float V1 = (CellY + CellHeight - 1.0f) / AtlasHeight;
+		const float CellX = FrameStyle * CellWidth;
+		const float FrameX = X - 2.0f;
+		const float FrameY = Y - 2.0f;
+		const float FrameWidth = Width + 4.0f;
+		const float FrameHeight = Height + 4.0f;
 
 		Graphics()->TextureSet(m_WclFrameTexture);
 		Graphics()->SetColor(ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f));
 		Graphics()->QuadsBegin();
-		Graphics()->QuadsSetSubset(U0, V0, U1, V1);
-		IGraphics::CQuadItem FrameQuad(X - 4.0f, Y - 4.0f, Width + 8.0f, Height + 8.0f);
-		Graphics()->QuadsDrawTL(&FrameQuad, 1);
+		auto DrawFramePatch = [&](float DestX, float DestY, float DestWidth, float DestHeight,
+			float SourceX, float SourceY, float SourceWidth, float SourceHeight) {
+			if(DestWidth <= 0.0f || DestHeight <= 0.0f)
+				return;
+			const float U0 = (CellX + SourceX + 0.5f) / AtlasWidth;
+			const float V0 = (SourceY + 0.5f) / AtlasHeight;
+			const float U1 = (CellX + SourceX + SourceWidth - 0.5f) / AtlasWidth;
+			const float V1 = (SourceY + SourceHeight - 0.5f) / AtlasHeight;
+			Graphics()->QuadsSetSubsetFree(U0, V0, U1, V0, U1, V1, U0, V1);
+			IGraphics::CQuadItem Patch(DestX, DestY, DestWidth, DestHeight);
+			Graphics()->QuadsDrawTL(&Patch, 1);
+		};
+
+		// Corners.
+		DrawFramePatch(FrameX, FrameY, Slice, Slice, 0.0f, 0.0f, Slice, Slice);
+		DrawFramePatch(FrameX + FrameWidth - Slice, FrameY, Slice, Slice, CellWidth - Slice, 0.0f, Slice, Slice);
+		DrawFramePatch(FrameX, FrameY + FrameHeight - Slice, Slice, Slice, 0.0f, CellWidth - Slice, Slice, Slice);
+		DrawFramePatch(FrameX + FrameWidth - Slice, FrameY + FrameHeight - Slice, Slice, Slice,
+			CellWidth - Slice, CellWidth - Slice, Slice, Slice);
+
+		// Edges.
+		DrawFramePatch(FrameX + Slice, FrameY, FrameWidth - Slice * 2.0f, Slice, Slice, 0.0f, Edge, Slice);
+		DrawFramePatch(FrameX + Slice, FrameY + FrameHeight - Slice, FrameWidth - Slice * 2.0f, Slice,
+			Slice, CellWidth - Slice, Edge, Slice);
+		DrawFramePatch(FrameX, FrameY + Slice, Slice, FrameHeight - Slice * 2.0f, 0.0f, Slice, Slice, Edge);
+		DrawFramePatch(FrameX + FrameWidth - Slice, FrameY + Slice, Slice, FrameHeight - Slice * 2.0f,
+			CellWidth - Slice, Slice, Slice, Edge);
 		Graphics()->QuadsEnd();
 		Graphics()->TextureClear();
 	}
