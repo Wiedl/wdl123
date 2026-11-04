@@ -111,7 +111,7 @@ public:
 		{
 			// Create text at standard zoom
 			CScreenRect ScreenRect = This.Graphics()->GetScreen();
-			This.Graphics()->MapScreenToInterface(This.m_Camera.m_Center.x, This.m_Camera.m_Center.y);
+			This.Graphics()->MapScreenToInterface(CameraCenter.x, CameraCenter.y);
 			This.TextRender()->DeleteTextContainer(m_TextContainerIndex);
 			UpdateText(This, Data);
 			This.Graphics()->MapScreen(ScreenRect);
@@ -841,7 +841,7 @@ public:
 	CNamePlate m_aNamePlates[MAX_CLIENTS];
 };
 
-void CNamePlates::RenderNamePlateGame(vec2 Position, const CNetObj_PlayerInfo *pPlayerInfo, float Alpha)
+void CNamePlates::RenderNamePlateGame(vec2 Position, const CNetObj_PlayerInfo *pPlayerInfo, float Alpha, vec2 CameraCenter)
 {
 	// Get screen edges to avoid rendering offscreen
 	CScreenRect ScreenRect = Graphics()->GetScreen();
@@ -1103,7 +1103,7 @@ void CNamePlates::OnRender()
 		if(GameClient()->m_aClients[i].m_SpecCharPresent)
 		{
 			const vec2 RenderPos = GameClient()->m_aClients[i].m_SpecChar;
-			RenderNamePlateGame(RenderPos, pInfo, 0.4f);
+			RenderNamePlateGame(RenderPos, pInfo, 0.4f, GameClient()->m_Camera.m_Center);
 		}
 		// Only render name plates for active characters
 		if(GameClient()->m_Snap.m_aCharacters[i].m_Active)
@@ -1114,7 +1114,7 @@ void CNamePlates::OnRender()
 			// if(g_Config.m_TcRenderNameplateSpec > 0)
 			//	continue;
 			const vec2 RenderPos = GameClient()->m_aClients[i].m_RenderPos;
-			RenderNamePlateGame(RenderPos, pInfo, 1.0f);
+			RenderNamePlateGame(RenderPos, pInfo, 1.0f, GameClient()->m_Camera.m_Center);
 		}
 	}
 }
