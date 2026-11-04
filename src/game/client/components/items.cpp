@@ -486,7 +486,9 @@ void CItems::OnRenderInternal(bool WclRender)
 	int DraggerStartTick = std::max((Client()->GameTick(g_Config.m_ClDummy) / 7) * 7, Client()->GameTick(g_Config.m_ClDummy) - 4);
 	int GunStartTick = (Client()->GameTick(g_Config.m_ClDummy) / 7) * 7;
 
-	bool UsePredicted = GameClient()->Predict() && GameClient()->AntiPingGunfire();
+	// WCL always follows a remote player, so local predicted entities cannot
+	// contribute to this view. Skip the prediction-world traversal entirely.
+	bool UsePredicted = !WclRender && GameClient()->Predict() && GameClient()->AntiPingGunfire();
 	auto &aSwitchers = GameClient()->Switchers();
 
 	CScreenRect ScreenRectLaser = Graphics()->GetScreen();
