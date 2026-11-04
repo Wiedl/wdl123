@@ -820,11 +820,14 @@ void CGameClient::OnRender()
 
 	UpdateSpectatorCursor();
 
-	// render all systems
+	// Render the independent WCL scene after the game world, but before HUD and
+	// interface components. This keeps menus, settings, chat and other UI above PiP.
 	for(auto &pComponent : m_vpAll)
+	{
+		if(pComponent == &m_Hud)
+			RenderWcl();
 		pComponent->OnRender();
-
-	RenderWcl();
+	}
 
 	// clear all events/input for this frame
 	Input()->Clear();
@@ -923,7 +926,8 @@ void CGameClient::RenderWcl()
 		return;
 	}
 
-	if(!g_Config.m_ClWclEnable)
+	if(!g_Config.m_ClWclEnable ||
+		(!g_Config.m_ClWclShowWorld && !g_Config.m_ClWclShowPlayers))
 		return;
 
 	const int ScreenWidth = Graphics()->ScreenWidth();
