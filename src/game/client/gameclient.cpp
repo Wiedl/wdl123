@@ -910,7 +910,15 @@ void CGameClient::OnRender()
 
 void CGameClient::RenderWcl()
 {
-	if(!g_Config.m_ClWclEnable || (Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK))
+	if(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
+	{
+		m_WclLastTargetId = -1;
+		m_WclLastTargetPos = vec2(0.0f, 0.0f);
+		m_WclHasLastTargetPos = false;
+		return;
+	}
+
+	if(!g_Config.m_ClWclEnable)
 		return;
 
 	const int ScreenWidth = Graphics()->ScreenWidth();
@@ -934,9 +942,20 @@ void CGameClient::RenderWcl()
 	};
 
 	int TargetClientId = -1;
-	if(g_Config.m_ClWclPlayerId >= 0 && IsValidTarget(g_Config.m_ClWclPlayerId))
+	if(g_Config.m_ClWclPlayerId >= 0)
 	{
-		TargetClientId = g_Config.m_ClWclPlayerId;
+		if(IsValidTarget(g_Config.m_ClWclPlayerId))
+			TargetClientId = g_Config.m_ClWclPlayerId;
+		else if(m_WclHasLastTargetPos && m_WclLastTargetId == g_Config.m_ClWclPlayerId &&
+			m_Snap.m_apPlayerInfos[m_WclLastTargetId] != nullptr)
+			TargetClientId = m_WclLastTargetId;
+	}
+	else if(m_WclHasLastTargetPos && m_WclLastTargetId >= 0 &&
+		m_Snap.m_apPlayerInfos[m_WclLastTargetId] != nullptr)
+	{
+		// Prefer the previous target so automatic mode does not jump between players.
+		// A missing character snapshot means the server clipped its position, not that it left.
+		TargetClientId = m_WclLastTargetId;
 	}
 	else
 	{
@@ -963,6 +982,23 @@ void CGameClient::RenderWcl()
 	}
 
 	if(!in_range(TargetClientId, MAX_CLIENTS - 1))
+		return;
+
+	vec2 Center;
+	if(IsValidTarget(TargetClientId))
+	{
+		Center = m_aClients[TargetClientId].m_RenderPos;
+		m_WclLastTargetId = TargetClientId;
+		m_WclLastTargetPos = Center;
+		m_WclHasLastTargetPos = true;
+	}
+	else if(m_WclHasLastTargetPos && m_WclLastTargetId == TargetClientId)
+	{
+		// The server no longer sends this character outside its network view distance.
+		// Keep rendering the last known camera instead of hiding the PiP completely.
+		Center = m_WclLastTargetPos;
+	}
+	else
 		return;
 
 	const int Width = std::clamp(g_Config.m_ClWclWidth, 1, ScreenWidth - Margin * 2);
