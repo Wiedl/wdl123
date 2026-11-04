@@ -11,6 +11,7 @@
 
 class CCollision;
 class CCharacter;
+class CDoor;
 class CEntity;
 class CMapBugs;
 
@@ -150,6 +151,8 @@ private:
 	CEntity *m_apFirstEntityTypes[NUM_ENTTYPES];
 	CEntity *m_apLastEntityTypes[NUM_ENTTYPES];
 	std::vector<CEntity *> m_aaEntityById[NUM_ENTTYPES];
+	std::vector<CDoor *> m_vpSortedDoors;
+	bool m_DoorOrderDirty = true;
 
 	CCharacter *m_apCharacters[MAX_CLIENTS];
 

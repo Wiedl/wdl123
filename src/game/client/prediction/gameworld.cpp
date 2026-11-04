@@ -100,6 +100,8 @@ int CGameWorld::FindEntities(vec2 Pos, float Radius, CEntity **ppEnts, int Max, 
 void CGameWorld::InsertEntity(CEntity *pEnt, bool Last)
 {
 	const int Type = pEnt->m_ObjType;
+	if(Type == ENTTYPE_DOOR)
+		m_DoorOrderDirty = true;
 	pEnt->m_pGameWorld = this;
 	pEnt->m_pNextTypeEntity = nullptr;
 	pEnt->m_pPrevTypeEntity = nullptr;
@@ -155,6 +157,8 @@ void CGameWorld::RemoveEntity(CEntity *pEnt)
 		return;
 
 	const int Id = pEnt->m_Id;
+	if(Type == ENTTYPE_DOOR)
+		m_DoorOrderDirty = true;
 
 	// remove
 	if(pEnt->m_pPrevTypeEntity)
@@ -710,24 +714,25 @@ void CGameWorld::NetObjAdd(int ObjId, int ObjType, const void *pObjData, const C
 
 void CGameWorld::ResetDoorCollision()
 {
-	// Doors add their move restrictions to the collision grid shared by the whole client
-	// rather than keeping them on the entity, so the grid is rebuilt after every snapshot:
-	// a destroyed door clears its entire span, including tiles another door still occupies.
-	// Doors are applied in map order, the order the server creates them in, so intersecting
-	// doors resolve to the same tile on both sides. Two doors originating on the same tile
-	// share a map index; the server creates the game/front-layer door before the switch-layer
-	// one, so the switch door (m_Number > 0) stamps the shared origin tile last and wins.
-	std::vector<CDoor *> vpDoors;
-	for(CEntity *pEnt = FindFirst(ENTTYPE_DOOR); pEnt; pEnt = pEnt->TypeNext())
-		vpDoors.push_back(static_cast<CDoor *>(pEnt));
-	std::stable_sort(vpDoors.begin(), vpDoors.end(), [this](const CDoor *pLeft, const CDoor *pRight) {
-		const int LeftIndex = Collision()->GetPureMapIndex(pLeft->m_Pos);
-		const int RightIndex = Collision()->GetPureMapIndex(pRight->m_Pos);
-		if(LeftIndex != RightIndex)
-			return LeftIndex < RightIndex;
-		return (pLeft->m_Number > 0) < (pRight->m_Number > 0);
-	});
-	for(CDoor *pDoor : vpDoors)
+	// Door order only changes when a door is inserted or removed. Reuse the sorted
+	// list across snapshots instead of allocating and stable-sorting it every tick.
+	if(m_DoorOrderDirty)
+	{
+		m_vpSortedDoors.clear();
+		for(CEntity *pEnt = FindFirst(ENTTYPE_DOOR); pEnt; pEnt = pEnt->TypeNext())
+			m_vpSortedDoors.push_back(static_cast<CDoor *>(pEnt));
+		std::stable_sort(m_vpSortedDoors.begin(), m_vpSortedDoors.end(), [this](const CDoor *pLeft, const CDoor *pRight) {
+			const int LeftIndex = Collision()->GetPureMapIndex(pLeft->m_Pos);
+			const int RightIndex = Collision()->GetPureMapIndex(pRight->m_Pos);
+			if(LeftIndex != RightIndex)
+				return LeftIndex < RightIndex;
+			return (pLeft->m_Number > 0) < (pRight->m_Number > 0);
+		});
+		m_DoorOrderDirty = false;
+	}
+
+	// The collision grid is rebuilt each snapshot, but the order of doors is cached.
+	for(CDoor *pDoor : m_vpSortedDoors)
 		pDoor->ResetCollision();
 }
 
