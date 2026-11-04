@@ -52,6 +52,7 @@ void CHud::ConHudEditorReset(IConsole::IResult *pResult, void *pUserData)
 void CHud::SetHudEditorActive(bool Active)
 {
 	m_HudEditorActive = Active;
+	m_HudEditorDragging = false;
 	m_HudEditorSelected = -1;
 }
 
@@ -69,6 +70,7 @@ void CHud::ResetHudEditorLayout()
 	g_Config.m_ClHudSpectatorPosX = 0;
 	g_Config.m_ClHudSpectatorPosY = 0;
 	g_Config.m_ClHudSpectatorScale = 100;
+	m_HudEditorDragging = false;
 	m_HudEditorSelected = -1;
 }
 
@@ -214,7 +216,8 @@ bool CHud::OnCursorMove(float x, float y, IInput::ECursorType CursorType)
 
 	Ui()->ConvertMouseMove(&x, &y, CursorType);
 	Ui()->OnCursorMove(x, y);
-	if(m_HudEditorSelected >= 0 && Graphics()->WindowHeight() > 0)
+	// Moving the pointer only moves a HUD group while the left mouse button is held.
+	if(m_HudEditorDragging && m_HudEditorSelected >= 0 && Graphics()->WindowHeight() > 0)
 	{
 		const float HudUnitsPerPixel = 300.0f / Graphics()->WindowHeight();
 		UpdateHudEditorOffset(m_HudEditorSelected, x * HudUnitsPerPixel, y * HudUnitsPerPixel);
@@ -229,8 +232,7 @@ bool CHud::OnInput(const IInput::CEvent &Event)
 
 	if(Event.m_Key == KEY_ESCAPE && (Event.m_Flags & IInput::FLAG_PRESS))
 	{
-		m_HudEditorActive = false;
-		m_HudEditorSelected = -1;
+		SetHudEditorActive(false);
 		return true;
 	}
 
@@ -242,10 +244,12 @@ bool CHud::OnInput(const IInput::CEvent &Event)
 			{
 				const vec2 Mouse = Ui()->UpdatedMousePos() * (300.0f / Graphics()->WindowHeight());
 				m_HudEditorSelected = GetHudEditorElementAt(Mouse);
+				m_HudEditorDragging = m_HudEditorSelected >= 0;
 			}
 		}
 		else if(Event.m_Flags & IInput::FLAG_RELEASE)
 		{
+			m_HudEditorDragging = false;
 			m_HudEditorSelected = -1;
 		}
 		return true;
@@ -259,7 +263,9 @@ bool CHud::OnInput(const IInput::CEvent &Event)
 		const int Element = GetHudEditorElementAt(Mouse);
 		if(Element >= 0)
 		{
+			// Wheel scaling highlights the group but must not start a drag.
 			m_HudEditorSelected = Element;
+			m_HudEditorDragging = false;
 			ChangeHudEditorScale(Element, Event.m_Key == KEY_MOUSE_WHEEL_UP ? 5 : -5);
 		}
 		return true;
@@ -360,6 +366,7 @@ void CHud::OnWindowResize()
 void CHud::OnReset()
 {
 	m_HudEditorActive = false;
+	m_HudEditorDragging = false;
 	m_HudEditorSelected = -1;
 	m_TimeCpDiff = 0.0f;
 	m_DDRaceTime = 0;
