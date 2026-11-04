@@ -42,6 +42,9 @@ class CPlayers : public CComponent
 	int m_WeaponEmoteQuadContainerIndex;
 	int m_aWeaponSpriteMuzzleQuadContainerIndex[NUM_WEAPONS];
 
+	CTeeRenderInfo m_aRenderInfo[MAX_CLIENTS];
+	bool m_RenderInfoValid = false;
+
 	void OnRenderInternal(bool WclRender, const CScreenRect *pScreenRect = nullptr);
 	void CreateNinjaTeeRenderInfo();
 	void CreateSpectatorTeeRenderInfo();
