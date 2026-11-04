@@ -928,7 +928,6 @@ void CGameClient::RenderWcl()
 		       ClientId != LocalClientId &&
 		       ClientId != m_aLocalIds[0] &&
 		       ClientId != m_aLocalIds[1] &&
-		       m_aClients[ClientId].m_Active &&
 		       m_Snap.m_aCharacters[ClientId].m_Active &&
 		       m_Snap.m_apPrevPlayerInfos[ClientId] != nullptr &&
 		       m_Snap.m_apPlayerInfos[ClientId] != nullptr;
