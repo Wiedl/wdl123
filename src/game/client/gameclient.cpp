@@ -926,7 +926,9 @@ void CGameClient::RenderWcl()
 		return;
 	}
 
-	if(!g_Config.m_ClWclEnable ||
+	// Keep the PiP out of the way while menus/settings are open. This is a
+	// hard guard in addition to render ordering, so settings can never be obscured.
+	if(!g_Config.m_ClWclEnable || m_Menus.IsActive() ||
 		(!g_Config.m_ClWclShowWorld && !g_Config.m_ClWclShowPlayers))
 		return;
 
