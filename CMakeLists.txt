@@ -3829,9 +3829,9 @@ endfunction()
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
 set(CPACK_GENERATOR TGZ TXZ)
 set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
-if(TARGET_OS STREQUAL "mac")
-  set(CPACK_STRIP_FILES FALSE)
-elseif(TARGET_OS STREQUAL "windows" AND TARGET_CPU_ARCHITECTURE STREQUAL "arm64")
+if(TARGET_OS STREQUAL "mac" OR TARGET_OS STREQUAL "windows")
+  # Windows uses MSVC or MinGW toolchains where the Unix "strip" command
+  # is not guaranteed to be available for the packaging step.
   set(CPACK_STRIP_FILES FALSE)
 elseif(TARGET_OS STREQUAL "emscripten")
   set(CPACK_STRIP_FILES FALSE)
