@@ -199,6 +199,7 @@ void CHud::UpdateHudEditorOffset(int Element, float DeltaX, float DeltaY)
 
 void CHud::ChangeHudEditorScale(int Element, int Delta)
 {
+	const int PreviousScale = round_to_int(GetHudEditorScale(Element) * 100.0f);
 	switch(Element)
 	{
 	case HUD_EDITOR_STATUS:
@@ -214,6 +215,8 @@ void CHud::ChangeHudEditorScale(int Element, int Delta)
 		g_Config.m_ClHudSpectatorScale = std::clamp(g_Config.m_ClHudSpectatorScale + Delta, 50, 200);
 		break;
 	}
+	if(PreviousScale != round_to_int(GetHudEditorScale(Element) * 100.0f))
+		ConfigManager()->Save();
 }
 
 bool CHud::OnCursorMove(float x, float y, IInput::ECursorType CursorType)
