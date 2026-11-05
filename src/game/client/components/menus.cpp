@@ -2273,6 +2273,10 @@ void CMenus::SetActive(bool Active)
 	{
 		Ui()->SetHotItem(nullptr);
 		Ui()->SetActiveItem(nullptr);
+		// Persist settings when leaving the in-game menu, including changes made
+		// in settings pages that are not part of the HUD editor.
+		if(!Active)
+			ConfigManager()->Save();
 	}
 	m_MenuActive = Active;
 	if(!m_MenuActive)
