@@ -258,7 +258,8 @@ void CMenus::RenderSettingsWcl(CUIRect MainView)
 			MainView.HSplitTop(22.0f, &Slider, &MainView);
 			DoSliderWithScaledValue(pPosY, pPosY, &Slider, Localize("Vertical offset (%)"), -100, 100, 1, &CUi::ms_LinearScrollbarScale);
 			MainView.HSplitTop(22.0f, &Slider, &MainView);
-			DoSliderWithScaledValue(pScale, pScale, &Slider, Localize("Scale (50–200%)"), 50, 200, 5, &CUi::ms_LinearScrollbarScale);
+			if(DoSliderWithScaledValue(pScale, pScale, &Slider, Localize("Scale (50–200%)"), 50, 200, 5, &CUi::ms_LinearScrollbarScale))
+				ConfigManager()->Save();
 			MainView.HSplitTop(4.0f, nullptr, &MainView);
 		};
 
