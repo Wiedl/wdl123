@@ -528,7 +528,7 @@ void CHud::RenderScoreHud()
 			str_format(aScoreTeam[TEAM_RED], sizeof(aScoreTeam[TEAM_RED]), "%d", GameClient()->m_Snap.m_pGameDataObj->m_TeamscoreRed);
 			str_format(aScoreTeam[TEAM_BLUE], sizeof(aScoreTeam[TEAM_BLUE]), "%d", GameClient()->m_Snap.m_pGameDataObj->m_TeamscoreBlue);
 
-			bool aRecreateTeamScore[2] = {str_comp(aScoreTeam[0], m_aScoreInfo[0].m_aScoreText) != 0, str_comp(aScoreTeam[1], m_aScoreInfo[1].m_aScoreText) != 0};
+			bool aRecreateTeamScore[2] = {ForceScoreInfoInit || str_comp(aScoreTeam[0], m_aScoreInfo[0].m_aScoreText) != 0, ForceScoreInfoInit || str_comp(aScoreTeam[1], m_aScoreInfo[1].m_aScoreText) != 0};
 
 			const int aFlagCarrier[2] = {
 				GameClient()->m_Snap.m_pGameDataObj->m_FlagCarrierRed,
@@ -702,7 +702,7 @@ void CHud::RenderScoreHud()
 				}
 			}
 
-			bool RecreateScores = str_comp(aScore[0], m_aScoreInfo[0].m_aScoreText) != 0 || str_comp(aScore[1], m_aScoreInfo[1].m_aScoreText) != 0 || m_LastLocalClientId != GameClient()->m_Snap.m_LocalClientId;
+			bool RecreateScores = ForceScoreInfoInit || str_comp(aScore[0], m_aScoreInfo[0].m_aScoreText) != 0 || str_comp(aScore[1], m_aScoreInfo[1].m_aScoreText) != 0 || m_LastLocalClientId != GameClient()->m_Snap.m_LocalClientId;
 			m_LastLocalClientId = GameClient()->m_Snap.m_LocalClientId;
 
 			bool RecreateRect = ForceScoreInfoInit;
@@ -2316,6 +2316,22 @@ void CHud::OnRender()
 	m_Width = 300.0f * Graphics()->ScreenAspect();
 	m_Height = 300.0f;
 	Graphics()->MapScreenToSize(m_Width, m_Height);
+
+	// Text containers are rasterized for the current screen scale. Recreate the
+	// score HUD containers when its editor scale changes to avoid scaling old glyphs.
+	static int s_LastScoreHudScale = -1;
+	if(s_LastScoreHudScale != g_Config.m_ClHudRightScale)
+	{
+		for(auto &ScoreInfo : m_aScoreInfo)
+		{
+			TextRender()->DeleteTextContainer(ScoreInfo.m_OptionalNameTextContainerIndex);
+			TextRender()->DeleteTextContainer(ScoreInfo.m_TextRankContainerIndex);
+			TextRender()->DeleteTextContainer(ScoreInfo.m_TextScoreContainerIndex);
+			Graphics()->DeleteQuadContainer(ScoreInfo.m_RoundRectQuadContainerIndex);
+			ScoreInfo.Reset();
+		}
+		s_LastScoreHudScale = g_Config.m_ClHudRightScale;
+	}
 
 #if defined(CONF_VIDEORECORDER)
 	if((IVideo::Current() && g_Config.m_ClVideoShowhud) || (!IVideo::Current() && g_Config.m_ClShowhud))
